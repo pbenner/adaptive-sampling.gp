@@ -1,27 +1,21 @@
 
 require("mvtnorm")
 
-new.gp <- function(x, expectation, kernelf)
+new.gp <- function(x, mu.prior, kernelf)
 {
-  # the prior expectation can be either a constant
-  # or an array of the same length as x
-  if (length(expectation) == length(x)) {
-    mu <- expectation
-  }
-  else {
-    mu <- rep(expectation[1], length(x))
-  }
+  mu <- rep(mu.prior[1], length(x))
   
-  gp <- list(x       = x,              # where to evaluate the gp
-             kernelf = kernelf,        # kernel function
-             mu      = mu,             # (prior) mean
-             sigma   = kernelf(x, x))  # (prior) covariance
+  gp <- list(x        = x,              # where to evaluate the gp
+             kernelf  = kernelf,        # kernel function
+             mu.prior = mu.prior,       # prior mean
+             mu       = mu,             # mean
+             sigma    = kernelf(x, x))  # covariance
   class(gp) <- "gp"
 
   return (gp)
 }
 
-kernel.exponential <- function(variance, l)
+kernel.exponential <- function(var, l)
 {
   f <- function(x, y) {
     n <- length(x)
@@ -30,45 +24,11 @@ kernel.exponential <- function(variance, l)
     dim(result) <- c(n, m)
     for (i in 1:n) {
       for (j in 1:m) {
-        result[i,j] <- variance*exp(-1.0/(2.0*l^2)*(x[i]-y[j])^2)
+        result[i,j] <- var*exp(-1.0/(2.0*l^2)*(x[i]-y[j])^2)
       }
     }
     return (result)
   }
-  
-  return (f)
-}
-
-kernel.bernoulli <- function(stddev, prime.x, prime.stddev, l)
-{
-  # stddev       : default standard deviation
-  # prime.x      : a list of positions for which there are measurements
-  # prime.stddev : standard deviation for each of the positions
-
-  # if a given position xi exists in prime.x then output
-  # its standard deviation, otherwise return the default deviation
-  f.stddev <- function(xi) {
-    if (xi %in% prime.x) {
-      return (prime.stddev[prime.x == xi][1])
-    }
-    else {
-      return (stddev)
-    }
-  }
-  
-  f <- function(x, y) {
-    n <- length(x)
-    m <- length(y)
-    result      <- matrix(0.0, n*m)
-    dim(result) <- c(n, m)
-    for (i in 1:n) {
-      for (j in 1:m) {
-        result[i,j] <- f.stddev(x[i])*f.stddev(y[j])*exp(-1.0/(2.0*l^2)*(x[i]-y[j])^2)
-      }
-    }
-    return (result)
-  }
-  
   return (f)
 }
 
@@ -84,7 +44,7 @@ posterior.gp <- function(gp, xp, yp, noise=NULL)
   k2 <- t(k1)                  # K(X*, X )
   k3 <- gp$kernelf(gp$x, gp$x) # K(X*, X*)
 
-  mu <- 0.5
+  mu <- gp$mu.prior
 
   # add noise to measurements?
   if (is.null(noise)) {
@@ -122,8 +82,8 @@ plot.gp <- function(gp, samples=NULL)
   plot(gp$x, gp$mu, 'n', xlab="x", ylab="p", ylim=c(0,1))
 
   var <- diag(gp$sigma)
-  z1  <- gp$mu + sqrt(var)
-  z2  <- gp$mu - sqrt(var)
+  z1  <- gp$mu + 2*sqrt(var)
+  z2  <- gp$mu - 2*sqrt(var)
   
   polygon(c(gp$x, rev(gp$x)), c(z1, rev(z2)),
      col = col, border = NA)
@@ -142,13 +102,10 @@ plot.gp <- function(gp, samples=NULL)
 
 gp <- new.gp(1:100/20, 0.0, kernel.exponential(1, 10))
 
-gp <- new.gp(1:10/2, 0.0, kernel.bernoulli(0.1, c(1, 2), c(0.1, 0.1), 1))
-
 xp <- c(1, 2, 3)
 yp <- c(0.7, 0.7, 0.7)
 # measurement noise
-#ep <- c(0.01, 0.01, 0.01)
-ep <- c(0.0, 0.0, 0.0)
+ep <- c(0.01, 0.01, 0.01)
 
 gp <- posterior(gp, xp, yp, ep)
 
@@ -159,10 +116,11 @@ plot(gp, samples(gp, 100))
 # Experiment
 ################################################################################
 
-new.experiment <- function(alpha)
+new.experiment <- function(alpha, kernelf)
 {
-  experiment        <- list(alpha = alpha,     # Dirichlet pseudo counts
-                            data  = new.env()) # experimental data
+  experiment        <- list(alpha   = alpha,     # Dirichlet pseudo counts
+                            data    = new.env(), # experimental data
+                            kernelf = kernelf)   # kernel function
   class(experiment) <- "experiment"
 
   return (experiment)
@@ -202,7 +160,7 @@ dirichlet.moments <- function(alpha)
   return (result)
 }
 
-posterior.experiment <- function(experiment, x)
+posterior.experiment <- function(experiment, x, kernelf)
 {
   # get prior pseudocounts
   alpha             <- experiment$alpha
@@ -217,9 +175,14 @@ posterior.experiment <- function(experiment, x)
   yp <- c() # mean
   ep <- c() # variance
 
-  for (key in ls(envir=experiment$data)) {
-    xt      <- as.numeric(key)
-    counts  <- experiment$data[[key]]
+  for (xt in x) {
+    key <- toString(xt)
+    if (!is.null(experiment$data[[key]])) {
+      counts <- alpha + experiment$data[[key]]
+    }
+    else {
+      counts <- alpha
+    }
 
     moments <- dirichlet.moments(counts + alpha)
    
@@ -227,13 +190,8 @@ posterior.experiment <- function(experiment, x)
     yp <- append(yp, moments$expectation[1])
     ep <- append(ep, moments$variance[1])
   }
-  print (xp)
-  print (yp)
-  print (ep)
   # construct the gaussian process
-  kernelf <- kernel.bernoulli(sqrt(prior.variance), xp, sqrt(ep), 1)
-#  kernelf <- kernel.exponential(1, 5)
-  gp      <- new.gp(x, prior.expectation, kernelf)
+  gp      <- new.gp(x, prior.expectation, experiment$kernelf)
   gp      <- posterior(gp, xp, yp, ep)
 
   return (gp)
@@ -242,18 +200,15 @@ posterior.experiment <- function(experiment, x)
 # Example
 ################################################################################
 
-e <- new.experiment(c(1,1))
-add.measurement(e, 1, c(10,3))
-add.measurement(e, 2, c( 9,4))
-add.measurement(e, 3, c(10,3))
+e <- new.experiment(c(0.1,0.1), kernel.exponential(1.0, 0.1))
+add.measurement(e, 1, c(100,3))
+add.measurement(e, 2, c( 90,1))
+add.measurement(e, 3, c(100,4))
 
-e <- new.experiment(c(1,1))
+e <- new.experiment(c(0.001,0.001), kernel.exponential(1.0, 0.5))
 add.measurement(e, 1, c( 1,2))
-add.measurement(e, 2, c( 1,2))
+add.measurement(e, 2, c( 1,1))
 add.measurement(e, 3, c( 1,2))
 
 gp <- posterior(e, 1:100/20)
-plot(gp)
-
-gp <- posterior(e, 1:10/2)
 plot(gp)
