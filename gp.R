@@ -49,7 +49,6 @@ posterior.gp <- function(gp, xp, yp, noise=NULL)
     mu <- gp$mu.prior
 
     # add noise to measurements?
-    print (noise)
     if (is.null(noise)) {
       A <- k0
     }
@@ -157,6 +156,9 @@ add.measurement.experiment <- function(experiment, x, counts)
   }
   else {
     experiment$data[[key]] <- experiment$data[[key]] + counts
+  }
+  if (all(experiment$data[[key]] == 0)) {
+    rm(list = key, envir=experiment$data)
   }
 }
 
@@ -277,3 +279,31 @@ gp2 <- posterior(e, 1:100/20, 1.0)
 
 kl.divergence(gp0, gp1)
 kl.divergence(gp0, gp2)
+
+# Sampling
+################################################################################
+
+utility <- function(experiment, ...)
+{
+  UseMethod("utility")
+}
+
+utility.experiment <- function(experiment, x, l=1.0)
+{
+  L   <- length(x) # number of possible stimuli
+  gp0 <- posterior(experiment, x, l)
+  ut  <- rep(0.0, L)
+  
+  for (i in 1:L) {
+    add.measurement(experiment, x[i], c( 1, 0))
+    gp1 <- posterior(experiment, x, l)
+    add.measurement(experiment, x[i], c(-1, 1))
+    gp2 <- posterior(experiment, x, l)
+    add.measurement(experiment, x[i], c( 0,-1))
+
+    p     <- bound(gp0$mu[i], c(0, 1))
+    ut[i] <- ut[i] +    p *kl.divergence(gp0, gp1)
+    ut[i] <- ut[i] + (1-p)*kl.divergence(gp0, gp2)
+  }
+  return (ut)
+}
