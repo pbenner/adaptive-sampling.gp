@@ -237,27 +237,9 @@ plot(gp, samples(gp, 10))
 # Information measures
 ################################################################################
 
-require("monomvn")
-
 kl.divergence <- function(gp, ...)
 {
   UseMethod("kl.divergence")
-}
-
-kl.divergence.gp <- function(gp0, gp1)
-{
-  mu0    <- gp0$mu
-  mu1    <- gp1$mu
-  sigma0 <- gp0$sigma
-  sigma1 <- gp1$sigma
-  
-  L0inv <- solve(chol(sigma0))
-  L1inv <- solve(chol(sigma1))
-  
-  tmp1  <- log(det((sigma1 %*% L0inv) %*% t(L0inv)))
-  tmp2  <- sum(diag(L1inv %*% (t(L1inv) %*% (drop((mu0 - mu1)%*%(mu0 - mu1)) + sigma0 + sigma1))))
-  
-  return (1/2*tmp1 + 1/2*tmp2)
 }
 
 kl.divergence.gp <- function(gp0, gp1)
@@ -276,19 +258,7 @@ kl.divergence.gp <- function(gp0, gp1)
   tmp2   <- sum(diag(L1inv %*% (t(L1inv) %*% sigma0)))
   tmp3   <- (mu0 - mu1) %*% (L1inv %*% (t(L1inv) %*% (mu0 - mu1)))
   
-  return (1/2*tmp1 + 1/2*tmp2 + 1/2*tmp3 - 1/2*N)
-}
-
-kl.divergence.gp <- function(gp0, gp1)
-{
-  mu0    <- gp0$mu
-  mu1    <- gp1$mu
-  sigma0 <- gp0$sigma
-  sigma1 <- gp1$sigma
-
-  result <- kl.norm(mu0, sigma0, mu1, sigma1)
-
-  return (result)
+  return (1/2*drop(tmp1 + tmp2 + tmp3 - N))
 }
 
 # Example
@@ -304,3 +274,6 @@ gp1 <- posterior(e, 1:100/20, 1.0)
 
 add.measurement(e, 2.5, c( 0,1))
 gp2 <- posterior(e, 1:100/20, 1.0)
+
+kl.divergence(gp0, gp1)
+kl.divergence(gp0, gp2)
