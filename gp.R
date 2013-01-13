@@ -10,7 +10,7 @@ new.gp <- function(x, mu.prior, kernelf)
              kernelf  = kernelf,        # kernel function
              mu.prior = mu.prior,       # prior mean
              mu       = mu,             # mean
-             sigma    = kernelf(x, x))  # covariance
+             sigma    = as.matrix(nearPD(kernelf(x, x))$mat))
   class(gp) <- "gp"
 
   return (gp)
@@ -40,31 +40,36 @@ posterior <- function(gp, ...)
 
 posterior.gp <- function(gp, xp, yp, noise=NULL)
 {
-  k0 <- gp$kernelf(xp, xp)     # K(X , X )
-  k1 <- gp$kernelf(xp, gp$x)   # K(X , X*)
-  k2 <- t(k1)                  # K(X*, X )
-  k3 <- gp$kernelf(gp$x, gp$x) # K(X*, X*)
+  if (length(xp) > 0) {
+    k0 <- gp$kernelf(xp, xp)     # K(X , X )
+    k1 <- gp$kernelf(xp, gp$x)   # K(X , X*)
+    k2 <- t(k1)                  # K(X*, X )
+    k3 <- gp$kernelf(gp$x, gp$x) # K(X*, X*)
 
-  mu <- gp$mu.prior
+    mu <- gp$mu.prior
 
-  # add noise to measurements?
-  if (is.null(noise)) {
-    A <- k0
+    # add noise to measurements?
+    print (noise)
+    if (is.null(noise)) {
+      A <- k0
+    }
+    else if (length(noise) == 1) {
+      A <- k0 + noise
+    }
+    else {
+      A <- k0 + diag(noise)
+    }
+    L        <- chol(A)
+    Linv     <- solve(L)
+
+    gp$mu    <- drop(mu + (k2 %*% Linv) %*% (t(Linv) %*% (yp - mu)))
+    gp$sigma <- k3 - (k2 %*% Linv) %*% (t(Linv) %*% k1)
+
+    # the resulting matrix is usually not positive definite due to
+    # numerical errors; use nearPD to compute the nearest positive
+    # definite matrix
+    gp$sigma <- as.matrix(nearPD(gp$sigma)$mat)
   }
-  else {
-    A <- k0 + diag(noise)
-  }
-  L        <- chol(A)
-  Linv     <- solve(L)
-
-  gp$mu    <- drop(mu + (k2 %*% Linv) %*% (t(Linv) %*% (yp - mu)))
-  gp$sigma <- k3 - (k2 %*% Linv) %*% (t(Linv) %*% k1)
-
-  # the resulting matrix is usually not positive definite due to
-  # numerical errors; use nearPD to compute the nearest positive
-  # definite matrix
-  gp$sigma <- as.matrix(nearPD(gp$sigma)$mat)
-  
   return (gp)
 }
 
@@ -227,10 +232,12 @@ add.measurement(e, 2, c( 1,3))
 add.measurement(e, 3, c( 1,6))
 
 gp <- posterior(e, 1:100/20, 1.0)
-plot(gp)
+plot(gp, samples(gp, 10))
 
 # Information measures
 ################################################################################
+
+require("monomvn")
 
 kl.divergence <- function(gp, ...)
 {
@@ -253,14 +260,47 @@ kl.divergence.gp <- function(gp0, gp1)
   return (1/2*tmp1 + 1/2*tmp2)
 }
 
+kl.divergence.gp <- function(gp0, gp1)
+{
+  mu0    <- gp0$mu
+  mu1    <- gp1$mu
+  sigma0 <- gp0$sigma
+  sigma1 <- gp1$sigma
+
+  N      <- length(mu0)
+
+  L0inv  <- solve(chol(sigma0))
+  L1inv  <- solve(chol(sigma1))
+  
+  tmp1   <- log(det((sigma1 %*% L0inv) %*% t(L0inv)))
+  tmp2   <- sum(diag(L1inv %*% (t(L1inv) %*% sigma0)))
+  tmp3   <- (mu0 - mu1) %*% (L1inv %*% (t(L1inv) %*% (mu0 - mu1)))
+  
+  return (1/2*tmp1 + 1/2*tmp2 + 1/2*tmp3 - 1/2*N)
+}
+
+kl.divergence.gp <- function(gp0, gp1)
+{
+  mu0    <- gp0$mu
+  mu1    <- gp1$mu
+  sigma0 <- gp0$sigma
+  sigma1 <- gp1$sigma
+
+  result <- kl.norm(mu0, sigma0, mu1, sigma1)
+
+  return (result)
+}
+
 # Example
 ################################################################################
 
 e <- new.experiment(c(2.0,2.0))
-add.measurement(e, 1, c( 1,4))
-add.measurement(e, 2, c( 1,3))
+#add.measurement(e, 1, c( 1,4))
+#add.measurement(e, 2, c( 1,3))
 gp0 <- posterior(e, 1:100/20, 1.0)
-add.measurement(e, 3, c( 1,6))
+
+add.measurement(e, 2, c( 0,1))
 gp1 <- posterior(e, 1:100/20, 1.0)
-add.measurement(e, 2, c( 0,2))
+
+add.measurement(e, 2.5, c( 0,1))
 gp2 <- posterior(e, 1:100/20, 1.0)
