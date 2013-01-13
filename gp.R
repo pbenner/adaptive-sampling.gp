@@ -200,15 +200,18 @@ posterior.experiment <- function(experiment, x, kernelf)
 # Example
 ################################################################################
 
-e <- new.experiment(c(0.1,0.1), kernel.exponential(1.0, 0.1))
+e <- new.experiment(c(0.1,0.1), kernel.exponential(20, 1.0))
 add.measurement(e, 1, c(100,3))
 add.measurement(e, 2, c( 90,1))
 add.measurement(e, 3, c(100,4))
 
-e <- new.experiment(c(0.001,0.001), kernel.exponential(1.0, 0.5))
-add.measurement(e, 1, c( 1,2))
-add.measurement(e, 2, c( 1,1))
-add.measurement(e, 3, c( 1,2))
+gp <- posterior(e, 1:100/20)
+plot(gp)
+
+e <- new.experiment(c(0.1,0.1), kernel.exponential(100, 1.0))
+add.measurement(e, 1, c( 1,4))
+add.measurement(e, 2, c( 1,3))
+add.measurement(e, 3, c( 1,6))
 
 gp <- posterior(e, 1:100/20)
 plot(gp)
