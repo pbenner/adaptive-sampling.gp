@@ -1,5 +1,6 @@
 
 require("mvtnorm")
+require("Matrix")
 
 new.gp <- function(x, mu.prior, kernelf)
 {
@@ -56,9 +57,14 @@ posterior.gp <- function(gp, xp, yp, noise=NULL)
   L        <- chol(A)
   Linv     <- solve(L)
 
-  gp$mu    <- mu + (k2 %*% Linv) %*% (t(Linv) %*% (yp - mu))
+  gp$mu    <- drop(mu + (k2 %*% Linv) %*% (t(Linv) %*% (yp - mu)))
   gp$sigma <- k3 - (k2 %*% Linv) %*% (t(Linv) %*% k1)
 
+  # the resulting matrix is usually not positive definite due to
+  # numerical errors; use nearPD to compute the nearest positive
+  # definite matrix
+  gp$sigma <- as.matrix(nearPD(gp$sigma)$mat)
+  
   return (gp)
 }
 
@@ -74,6 +80,14 @@ samples.gp <- function(gp, n=1)
   return (x)
 }
 
+bound <- function(line, range=c(0,1))
+{
+  # bound function values in the inverval given by range
+  tmp0 <- sapply(line, function(x) min(x, range[2]))
+  tmp1 <- sapply(tmp0, function(x) max(x, range[1]))
+  return (tmp1)
+}
+
 plot.gp <- function(gp, samples=NULL)
 {
   col <- rgb(8/255, 81/255, 156/255, alpha=0.625)
@@ -81,8 +95,8 @@ plot.gp <- function(gp, samples=NULL)
   plot(gp$x, gp$mu, 'n', xlab="x", ylab="p", ylim=c(0,1))
 
   var <- diag(gp$sigma)
-  z1  <- gp$mu + 2*sqrt(var)
-  z2  <- gp$mu - 2*sqrt(var)
+  z1  <- bound(gp$mu + 2*sqrt(var))
+  z2  <- bound(gp$mu - 2*sqrt(var))
   
   polygon(c(gp$x, rev(gp$x)), c(z1, rev(z2)),
      col = col, border = NA)
@@ -91,7 +105,7 @@ plot.gp <- function(gp, samples=NULL)
 
   if (!is.null(samples)) {
     for (i in 1:dim(samples)[1]) {
-      lines(gp$x, samples[i,], 'l', lwd=0.5)
+      lines(gp$x, bound(samples[i,]), 'l', lwd=0.5)
     }
   }
 }
@@ -214,3 +228,39 @@ add.measurement(e, 3, c( 1,6))
 
 gp <- posterior(e, 1:100/20, 1.0)
 plot(gp)
+
+# Information measures
+################################################################################
+
+kl.divergence <- function(gp, ...)
+{
+  UseMethod("kl.divergence")
+}
+
+kl.divergence.gp <- function(gp0, gp1)
+{
+  mu0    <- gp0$mu
+  mu1    <- gp1$mu
+  sigma0 <- gp0$sigma
+  sigma1 <- gp1$sigma
+  
+  L0inv <- solve(chol(sigma0))
+  L1inv <- solve(chol(sigma1))
+  
+  tmp1  <- log(det((sigma1 %*% L0inv) %*% t(L0inv)))
+  tmp2  <- sum(diag(L1inv %*% (t(L1inv) %*% (drop((mu0 - mu1)%*%(mu0 - mu1)) + sigma0 + sigma1))))
+  
+  return (1/2*tmp1 + 1/2*tmp2)
+}
+
+# Example
+################################################################################
+
+e <- new.experiment(c(2.0,2.0))
+add.measurement(e, 1, c( 1,4))
+add.measurement(e, 2, c( 1,3))
+gp0 <- posterior(e, 1:100/20, 1.0)
+add.measurement(e, 3, c( 1,6))
+gp1 <- posterior(e, 1:100/20, 1.0)
+add.measurement(e, 2, c( 0,2))
+gp2 <- posterior(e, 1:100/20, 1.0)
