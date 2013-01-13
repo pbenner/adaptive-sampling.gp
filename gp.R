@@ -172,7 +172,7 @@ posterior.experiment <- function(experiment, x, l)
   kernelf           <- kernel.exponential(prior.variance, l)
   # construct the gaussian process
   gp                <- new.gp(x, prior.expectation, kernelf)
-  print (prior.variance)
+
   if (length(experiment$data) > 0) {
     # we have measurements...
     xp <- c() # position
