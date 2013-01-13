@@ -54,11 +54,10 @@ posterior.gp <- function(gp, xp, yp, noise=NULL)
     A <- k0 + diag(noise)
   }
   L        <- chol(A)
-  Linv1    <- solve(L)
-  Linv2    <- solve(t(L))
+  Linv     <- solve(L)
 
-  gp$mu    <- mu + (k2 %*% Linv1) %*% (Linv2 %*% (yp - mu))
-  gp$sigma <- k3 - (k2 %*% Linv1) %*% (Linv2 %*% k1)
+  gp$mu    <- mu + (k2 %*% Linv) %*% (t(Linv) %*% (yp - mu))
+  gp$sigma <- k3 - (k2 %*% Linv) %*% (t(Linv) %*% k1)
 
   return (gp)
 }
@@ -116,11 +115,10 @@ plot(gp, samples(gp, 100))
 # Experiment
 ################################################################################
 
-new.experiment <- function(alpha, kernelf)
+new.experiment <- function(alpha)
 {
   experiment        <- list(alpha   = alpha,     # Dirichlet pseudo counts
-                            data    = new.env(), # experimental data
-                            kernelf = kernelf)   # kernel function
+                            data    = new.env()) # experimental data
   class(experiment) <- "experiment"
 
   return (experiment)
@@ -160,7 +158,7 @@ dirichlet.moments <- function(alpha)
   return (result)
 }
 
-posterior.experiment <- function(experiment, x, kernelf)
+posterior.experiment <- function(experiment, x, l)
 {
   # get prior pseudocounts
   alpha             <- experiment$alpha
@@ -170,29 +168,30 @@ posterior.experiment <- function(experiment, x, kernelf)
   prior.expectation <- prior.moments$expectation[1]
   # and the variance is used in the kernel function
   prior.variance    <- prior.moments$variance[1]
-  
-  xp <- c() # position
-  yp <- c() # mean
-  ep <- c() # variance
-
-  for (xt in x) {
-    key <- toString(xt)
-    if (!is.null(experiment$data[[key]])) {
-      counts <- alpha + experiment$data[[key]]
-    }
-    else {
-      counts <- alpha
-    }
-
-    moments <- dirichlet.moments(counts + alpha)
-   
-    xp <- append(xp, xt)
-    yp <- append(yp, moments$expectation[1])
-    ep <- append(ep, moments$variance[1])
-  }
+  # generate a kernel which is limited by the prior variance
+  kernelf           <- kernel.exponential(prior.variance, l)
   # construct the gaussian process
-  gp      <- new.gp(x, prior.expectation, experiment$kernelf)
-  gp      <- posterior(gp, xp, yp, ep)
+  gp                <- new.gp(x, prior.expectation, kernelf)
+  print (prior.variance)
+  if (length(experiment$data) > 0) {
+    # we have measurements...
+    xp <- c() # position
+    yp <- c() # mean
+    ep <- c() # variance
+
+    for (key in ls(envir=experiment$data)) {
+      xt      <- as.numeric(key)
+      counts  <- experiment$data[[key]]
+
+      moments <- dirichlet.moments(counts + alpha)
+
+      xp <- append(xp, xt)
+      yp <- append(yp, moments$expectation[1])
+      ep <- append(ep, moments$variance[1])
+    }
+    # compute the posterior of the gaussian process
+    gp <- posterior(gp, xp, yp, ep)
+  }
 
   return (gp)
 }
@@ -200,18 +199,18 @@ posterior.experiment <- function(experiment, x, kernelf)
 # Example
 ################################################################################
 
-e <- new.experiment(c(0.1,0.1), kernel.exponential(20, 1.0))
+e <- new.experiment(c(2.0,2.0))
 add.measurement(e, 1, c(100,3))
 add.measurement(e, 2, c( 90,1))
 add.measurement(e, 3, c(100,4))
 
-gp <- posterior(e, 1:100/20)
+gp <- posterior(e, 1:100/20, 1.0)
 plot(gp)
 
-e <- new.experiment(c(0.1,0.1), kernel.exponential(100, 1.0))
+e <- new.experiment(c(2.0,2.0))
 add.measurement(e, 1, c( 1,4))
 add.measurement(e, 2, c( 1,3))
 add.measurement(e, 3, c( 1,6))
 
-gp <- posterior(e, 1:100/20)
+gp <- posterior(e, 1:100/20, 1.0)
 plot(gp)
