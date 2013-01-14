@@ -16,7 +16,14 @@ new.gp <- function(x, mu.prior, kernelf)
   return (gp)
 }
 
-kernel.exponential <- function(var, l)
+partially.apply <- function(f, ...) {
+  capture <- list(...)
+  function(...) {
+    do.call(f, c(capture, list(...)))
+  }
+}
+
+kernel.exponential <- function(l, var)
 {
   f <- function(x, y) {
     n <- length(x)
@@ -122,7 +129,7 @@ plot.gp <- function(gp, s=NULL)
 # Example
 ################################################################################
 
-gp <- new.gp(1:100/20, 0.0, kernel.exponential(1, 10))
+gp <- new.gp(1:100/20, 0.0, kernel.exponential(10, 1))
 
 xp <- c(1, 2, 3)
 yp <- c(0.7, 0.7, 0.7)
@@ -138,10 +145,15 @@ plot(gp, samples(gp, 100))
 # Experiment
 ################################################################################
 
-new.experiment <- function(alpha)
+new.experiment <- function(alpha,
+                           # the kernel.type is a partially applied
+                           # kernel function, which still has a free
+                           # variance parameter
+                           kernel.type=partially.apply(kernel.exponential, 1.0))
 {
-  experiment        <- list(alpha   = alpha,     # Dirichlet pseudo counts
-                            data    = new.env()) # experimental data
+  experiment        <- list(alpha       = alpha,       # Dirichlet pseudo counts
+                            data        = new.env(),   # experimental data
+                            kernel.type = kernel.type) # kernel function
   class(experiment) <- "experiment"
 
   return (experiment)
@@ -184,7 +196,7 @@ dirichlet.moments <- function(alpha)
   return (result)
 }
 
-posterior.experiment <- function(experiment, x, l)
+posterior.experiment <- function(experiment, x)
 {
   # get prior pseudocounts
   alpha             <- experiment$alpha
@@ -195,7 +207,7 @@ posterior.experiment <- function(experiment, x, l)
   # and the variance is used in the kernel function
   prior.variance    <- prior.moments$variance[1]
   # generate a kernel which is limited by the prior variance
-  kernelf           <- kernel.exponential(prior.variance, l)
+  kernelf           <- experiment$kernel.type(prior.variance)
   # construct the gaussian process
   gp                <- new.gp(x, prior.expectation, kernelf)
 
@@ -222,6 +234,12 @@ posterior.experiment <- function(experiment, x, l)
   return (gp)
 }
 
+plot.experiment <- function(experiment, x)
+{
+  gp <- posterior(e, x)
+  plot(gp)
+}
+
 # Example
 ################################################################################
 
@@ -230,7 +248,7 @@ add.measurement(e, 1, c(100,3))
 add.measurement(e, 2, c( 90,1))
 add.measurement(e, 3, c(100,4))
 
-gp <- posterior(e, 1:100/20, 1.0)
+gp <- posterior(e, 1:100/20)
 plot(gp)
 
 e <- new.experiment(c(2.0,2.0))
@@ -238,7 +256,7 @@ add.measurement(e, 1, c( 1,4))
 add.measurement(e, 2, c( 1,3))
 add.measurement(e, 3, c( 1,6))
 
-gp <- posterior(e, 1:100/20, 1.0)
+gp <- posterior(e, 1:100/20)
 plot(gp, samples(gp, 10))
 
 # Information measures
@@ -274,13 +292,13 @@ kl.divergence.gp <- function(gp0, gp1)
 e <- new.experiment(c(2.0,2.0))
 #add.measurement(e, 1, c( 1,4))
 #add.measurement(e, 2, c( 1,3))
-gp0 <- posterior(e, 1:100/20, 1.0)
+gp0 <- posterior(e, 1:100/20)
 
 add.measurement(e, 2, c( 0,1))
-gp1 <- posterior(e, 1:100/20, 1.0)
+gp1 <- posterior(e, 1:100/20)
 
 add.measurement(e, 2.5, c( 0,1))
-gp2 <- posterior(e, 1:100/20, 1.0)
+gp2 <- posterior(e, 1:100/20)
 
 kl.divergence(gp0, gp1)
 kl.divergence(gp0, gp2)
@@ -288,22 +306,24 @@ kl.divergence(gp0, gp2)
 # Sampling
 ################################################################################
 
+library(nnet) # which.is.max
+
 utility <- function(experiment, ...)
 {
   UseMethod("utility")
 }
 
-utility.experiment <- function(experiment, x, l=1.0)
+utility.experiment <- function(experiment, x)
 {
   L   <- length(x) # number of possible stimuli
-  gp0 <- posterior(experiment, x, l)
+  gp0 <- posterior(experiment, x)
   ut  <- rep(0.0, L)
   
   for (i in 1:L) {
     add.measurement(experiment, x[i], c( 1, 0))
-    gp1 <- posterior(experiment, x, l)
+    gp1 <- posterior(experiment, x)
     add.measurement(experiment, x[i], c(-1, 1))
-    gp2 <- posterior(experiment, x, l)
+    gp2 <- posterior(experiment, x)
     add.measurement(experiment, x[i], c( 0,-1))
 
     p     <- bound(gp0$mu[i], c(0, 1))
@@ -312,3 +332,43 @@ utility.experiment <- function(experiment, x, l=1.0)
   }
   return (ut)
 }
+
+sample.with.gt <- function(experiment, x, gt, N=1)
+{
+  for (i in 1:N) {
+    # compute utility for every position
+    ut <- utility(experiment, x)
+    # select best position; if multiple global maxima exist then
+    # choose one of them at random
+    k  <- which.is.max(ut)
+    # draw a new sample from the ground truth
+    counts          <- c(0, 0)
+    counts[gt(x[k])] <- 1
+    add.measurement(experiment, x[k], counts)
+  }
+}
+
+new.gt <- function(x, y)
+{
+  gt <- function(xt) {
+    if (runif(1, 0, 1) <= y[x == xt]) {
+      return (1)
+    }
+    else {
+      return (2)
+    }
+  }
+  return (gt)
+}
+
+# Example
+################################################################################
+
+e  <- new.experiment(c(2.0,2.0))
+x  <- 1:10/2
+gt <- new.gt(x,
+             c(0.977895, 0.959606, 0.927331, 0.872769, 0.786948,
+               0.666468, 0.523201, 0.388603, 0.307012, 0.327954))
+
+sample.with.gt(e, x, gt)
+plot(e, 1:100/20)
