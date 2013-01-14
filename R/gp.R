@@ -1,10 +1,14 @@
 
 require("mvtnorm")
 require("Matrix")
+require("ggplot2")
 
 new.gp <- function(x, mu.prior, kernelf, sigma=NULL)
 {
-  mu <- rep(mu.prior[1], length(x))
+  if (!is.matrix(x)) {
+    x <- as.matrix(x)
+  }
+  mu <- rep(mu.prior[1], dim(x)[1])
 
   if (is.null(sigma)) {
     sigma <- as.matrix(nearPD(kernelf(x, x))$mat)
@@ -30,13 +34,13 @@ partially.apply <- function(f, ...) {
 kernel.exponential <- function(l, var)
 {
   f <- function(x, y) {
-    n <- length(x)
-    m <- length(y)
+    n <- dim(x)[1]
+    m <- dim(y)[1]
     result      <- matrix(0.0, n*m)
     dim(result) <- c(n, m)
     for (i in 1:n) {
       for (j in 1:m) {
-        result[i,j] <- var*exp(-1.0/(2.0*l^2)*(x[i]-y[j])^2)
+        result[i,j] <- var*exp(-1.0/(2.0*l^2)*drop((x[i,]-y[j,])%*%(x[i,]-y[j,])))
       }
     }
     return (result)
@@ -51,35 +55,45 @@ posterior <- function(gp, ...)
 
 posterior.gp <- function(gp, xp, yp, noise=NULL)
 {
-  if (length(xp) > 0) {
-    k0 <- gp$kernelf(xp, xp)     # K(X , X )
-    k1 <- gp$kernelf(xp, gp$x)   # K(X , X*)
-    k2 <- t(k1)                  # K(X*, X )
-    k3 <- gp$kernelf(gp$x, gp$x) # K(X*, X*)
-
-    mu <- gp$mu.prior
-
-    # add noise to measurements?
-    if (is.null(noise)) {
-      A <- k0
-    }
-    else if (length(noise) == 1) {
-      A <- k0 + noise
-    }
-    else {
-      A <- k0 + diag(noise)
-    }
-    L        <- chol(A)
-    Linv     <- solve(L)
-
-    gp$mu    <- drop(mu + (k2 %*% Linv) %*% (t(Linv) %*% (yp - mu)))
-    gp$sigma <- k3 - (k2 %*% Linv) %*% (t(Linv) %*% k1)
-
-    # the resulting matrix is usually not positive definite due to
-    # numerical errors; use nearPD to compute the nearest positive
-    # definite matrix
-    gp$sigma <- as.matrix(nearPD(gp$sigma)$mat)
+  # check arguments
+  if (!is.matrix(xp)) {
+    xp <- as.matrix(xp)
   }
+  if (!is.matrix(yp)) {
+    yp <- as.matrix(yp)
+  }
+  if (!is.matrix(noise)) {
+    noise <- as.matrix(noise)
+  }
+  # compute posterior...
+  k0 <- gp$kernelf(xp, xp)     # K(X , X )
+  k1 <- gp$kernelf(xp, gp$x)   # K(X , X*)
+  k2 <- t(k1)                  # K(X*, X )
+  k3 <- gp$kernelf(gp$x, gp$x) # K(X*, X*)
+
+  mu <- gp$mu.prior
+
+  # add noise to measurements?
+  if (is.null(noise)) {
+    A <- k0
+  }
+  else if (dim(noise)[1] == 1) {
+    A <- k0 + noise
+  }
+  else {
+    A <- k0 + diag(as.vector(noise))
+  }
+  L        <- chol(A)
+  Linv     <- solve(L)
+
+  gp$mu    <- drop(mu + (k2 %*% Linv) %*% (t(Linv) %*% (yp - mu)))
+  gp$sigma <- k3 - (k2 %*% Linv) %*% (t(Linv) %*% k1)
+
+  # the resulting matrix is usually not positive definite due to
+  # numerical errors; use nearPD to compute the nearest positive
+  # definite matrix
+  gp$sigma <- as.matrix(nearPD(gp$sigma)$mat)
+
   return (gp)
 }
 
@@ -133,7 +147,7 @@ plot.gp <- function(gp, s=NULL)
 # Example
 ################################################################################
 
-gp <- new.gp(1:100/20, 0.0, kernel.exponential(10, 1))
+gp <- new.gp(1:100/20, 0.5, kernel.exponential(10, 1))
 
 xp <- c(1, 2, 3)
 yp <- c(0.7, 0.7, 0.7)
@@ -383,12 +397,12 @@ plot(e, 1:100/20)
 x        <- 0:100/20
 theta    <- (1-tanh(-50:50/20))/2.5+0.1
 
-e        <- new.experiment(c(2.0,2.0),
+e        <- new.experiment(c(1.0,1.0),
                            partially.apply(kernel.exponential, 0.8))
 sample.x <- 0:10/2
 gt       <- new.gt(x, theta)
 
-for (i in 1:250) {
+for (i in 1:200) {
   sample.with.gt(e, sample.x, gt)
   png(filename=sprintf("plot_%03d.png", i),
       width = 1200, height = 800)
@@ -397,3 +411,31 @@ for (i in 1:250) {
   lines(x, theta, 'l', lwd=3, col='red')
   dev.off()
 }
+
+# mencoder mf://plot_*.png -mf type=png:fps=4 -ovc lavc -lavcopts
+# vcodec=mpeg4 -oac copy -o plot.avi
+
+# 2D
+################################################################################
+
+data     <- as.matrix(expand.grid(x = 1:20/4, y = 1:20/4))
+gp       <- new.gp(data, 0.5, kernel.exponential.2d(2, 1))
+
+xp <- matrix(0,2, nrow=2)
+xp[1,] <- c(2,2)
+xp[1,] <- c(4,4)
+
+yp <- c(0.2, 0.8)
+# measurement noise
+ep <- c(0.001, 0.001)
+
+gp <- posterior(gp, xp, yp, ep)
+
+
+p <- ggplot(data = data.frame(x = data[,1], y = data[,2], z = gp$mu),
+            aes(x = x, y = y, z = z))
+p + geom_tile(aes(fill=z)) + stat_contour()
+
+p <- ggplot(data = data.frame(x = data[,1], y = data[,2], z = diag(gp$sigma)),
+            aes(x = x, y = y, z = z))
+p + geom_tile(aes(fill=z)) + stat_contour()
