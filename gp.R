@@ -2,15 +2,19 @@
 require("mvtnorm")
 require("Matrix")
 
-new.gp <- function(x, mu.prior, kernelf)
+new.gp <- function(x, mu.prior, kernelf, sigma=NULL)
 {
   mu <- rep(mu.prior[1], length(x))
+
+  if (is.null(sigma)) {
+    sigma <- as.matrix(nearPD(kernelf(x, x))$mat)
+  }
   
   gp <- list(x        = x,              # where to evaluate the gp
              kernelf  = kernelf,        # kernel function
              mu.prior = mu.prior,       # prior mean
              mu       = mu,             # mean
-             sigma    = as.matrix(nearPD(kernelf(x, x))$mat))
+             sigma    = sigma)
   class(gp) <- "gp"
 
   return (gp)
