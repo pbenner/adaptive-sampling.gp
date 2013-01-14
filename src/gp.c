@@ -21,29 +21,29 @@
 #include <R.h>
 #include <Rinternals.h>
 
-SEXP exponential_kernel_1d(SEXP x, SEXP y)
+#include <math.h>
+
+SEXP exponential_kernel_1d(SEXP x, SEXP y, SEXP l, SEXP var)
 {
-        R_len_t i, j, nx = length(x), ny = length(y);
-        double tmp, *rx = REAL(x), *ry = REAL(y), *rans;
-        SEXP ans, dim, dimnames;
+        R_len_t i, j;
+        R_len_t nx = length(x);
+        R_len_t ny = length(y);
+        double tmp;
+        double *rx   = REAL(x);
+        double *ry   = REAL(y);
+        double *rl   = REAL(l);
+        double *rvar = REAL(var);
+        double *rans;
+        SEXP ans;
      
-        PROTECT(ans = allocVector(REALSXP, nx*ny));
+        PROTECT(ans = allocMatrix(REALSXP, nx, ny));
         rans = REAL(ans);
         for(i = 0; i < nx; i++) {
-                tmp = rx[i];
-                for(j = 0; j < ny; j++)
-                        rans[i + nx*j] = tmp * ry[j];
+                for(j = 0; j < ny; j++) {
+                        rans[i + nx*j] = (*rvar)*exp(1.0/(2.0*pow(*rl, 2))*(rx[i] - ry[j])*(rx[i] - ry[j]));
+                }
         }
-     
-        PROTECT(dim = allocVector(INTSXP, 2));
-        INTEGER(dim)[0] = nx; INTEGER(dim)[1] = ny;
-        setAttrib(ans, R_DimSymbol, dim);
-     
-        PROTECT(dimnames = allocVector(VECSXP, 2));
-        SET_VECTOR_ELT(dimnames, 0, getAttrib(x, R_NamesSymbol));
-        SET_VECTOR_ELT(dimnames, 1, getAttrib(y, R_NamesSymbol));
-        setAttrib(ans, R_DimNamesSymbol, dimnames);
-     
-        UNPROTECT(3);
+        UNPROTECT(1);
+
         return(ans);
 }

@@ -439,3 +439,19 @@ p + geom_tile(aes(fill=z)) + stat_contour()
 p <- ggplot(data = data.frame(x = data[,1], y = data[,2], z = diag(gp$sigma)),
             aes(x = x, y = y, z = z))
 p + geom_tile(aes(fill=z)) + stat_contour()
+
+
+# kernel interface
+################################################################################
+
+dyn.load("../src/gp.so")
+
+kernel.exponential.c <- function(x, y, l, var)
+{
+  storage.mode(x)   <- "double"
+  storage.mode(y)   <- "double"
+  storage.mode(l)   <- "double"
+  storage.mode(var) <- "double"
+
+  .Call("exponential_kernel_1d", x, y, l, var)
+}
