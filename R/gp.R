@@ -40,10 +40,18 @@ kernel.exponential <- function(l, var)
     dim(result) <- c(n, m)
     for (i in 1:n) {
       for (j in 1:m) {
-        result[i,j] <- var*exp(-1.0/(2.0*l^2)*drop((x[i,]-y[j,])%*%(x[i,]-y[j,])))
+        result[i,j] <- var*exp(-1.0/(2.0*l^2)*(x[i]-y[j])^2)
       }
     }
     return (result)
+  }
+  return (f)
+}
+
+kernel.exponential <- function(l, var)
+{
+  f <- function(x, y) {
+    kernel.exponential.c.2d(x, y, l, var)
   }
   return (f)
 }
@@ -418,8 +426,8 @@ for (i in 1:200) {
 # 2D
 ################################################################################
 
-data     <- as.matrix(expand.grid(x = 1:20/4, y = 1:20/4))
-gp       <- new.gp(data, 0.5, kernel.exponential.2d(2, 1))
+data     <- as.matrix(expand.grid(x = 1:40/4, y = 1:40/4))
+gp       <- new.gp(data, 0.5, kernel.exponential(2, 1))
 
 xp <- matrix(0,2, nrow=2)
 xp[1,] <- c(2,2)
@@ -446,12 +454,38 @@ p + geom_tile(aes(fill=z)) + stat_contour()
 
 dyn.load("../src/gp.so")
 
-kernel.exponential.c <- function(x, y, l, var)
+dyn.load("/home/philipp/Source/adaptive-sampling/adaptive-sampling/R/gp/src/gp.so")
+
+kernel.exponential.c.1d <- function(x, y, l, var)
 {
   storage.mode(x)   <- "double"
   storage.mode(y)   <- "double"
   storage.mode(l)   <- "double"
   storage.mode(var) <- "double"
 
+  if (!is.matrix(x)) {
+    x <- as.matrix(x)
+  }
+  if (!is.matrix(y)) {
+    y <- as.matrix(y)
+  }
+
   .Call("exponential_kernel_1d", x, y, l, var)
+}
+
+kernel.exponential.c.2d <- function(x, y, l, var)
+{
+  storage.mode(x)   <- "double"
+  storage.mode(y)   <- "double"
+  storage.mode(l)   <- "double"
+  storage.mode(var) <- "double"
+
+  if (!is.matrix(x)) {
+    x <- as.matrix(x)
+  }
+  if (!is.matrix(y)) {
+    y <- as.matrix(y)
+  }
+
+  .Call("exponential_kernel_2d", x, y, l, var)
 }

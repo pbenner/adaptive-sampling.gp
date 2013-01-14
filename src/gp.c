@@ -34,13 +34,82 @@ SEXP exponential_kernel_1d(SEXP x, SEXP y, SEXP l, SEXP var)
         double *rl   = REAL(l);
         double *rvar = REAL(var);
         double *rans;
-        SEXP ans;
-     
+        SEXP ans, dim;
+
+        /* check input */
+        dim = getAttrib(x, R_DimSymbol);
+        if(length(dim) != 2 && INTEGER(dim)[1] != 1) {
+                error("x has invalid dimension");
+        }
+
+        dim = getAttrib(y, R_DimSymbol);
+        if(length(dim) != 2 && INTEGER(dim)[1] != 1) {
+                error("y has invalid dimension");
+        }
+
+        if (length(l) != 1) {
+                error("l is not a scalar");
+        }
+        if (length(var) != 1) {
+                error("var is not a scalar");
+        }
+
+        /* compute kernel */
         PROTECT(ans = allocMatrix(REALSXP, nx, ny));
         rans = REAL(ans);
         for(i = 0; i < nx; i++) {
                 for(j = 0; j < ny; j++) {
-                        rans[i + nx*j] = (*rvar)*exp(1.0/(2.0*pow(*rl, 2))*(rx[i] - ry[j])*(rx[i] - ry[j]));
+                        rans[i + nx*j] =
+                                (*rvar)*exp(-1.0/(2.0*(*rl)*(*rl))*(rx[i] - ry[j])*(rx[i] - ry[j]));
+                }
+        }
+        UNPROTECT(1);
+
+        return(ans);
+}
+
+SEXP exponential_kernel_2d(SEXP x, SEXP y, SEXP l, SEXP var)
+{
+        R_len_t i, j;
+        R_len_t nx;
+        R_len_t ny;
+        double tmp;
+        double *rx   = REAL(x);
+        double *ry   = REAL(y);
+        double *rl   = REAL(l);
+        double *rvar = REAL(var);
+        double *rans, norm;
+        SEXP ans, dim;
+
+        /* check input */
+        dim = getAttrib(x, R_DimSymbol);
+        if(length(dim) != 2 && INTEGER(dim)[1] != 2) {
+                error("x has invalid dimension");
+        }
+        nx = INTEGER(dim)[0];
+
+        dim = getAttrib(y, R_DimSymbol);
+        if(length(dim) != 2 && INTEGER(dim)[1] != 2) {
+                error("y has invalid dimension");
+        }
+        ny = INTEGER(dim)[0];
+
+        if (length(l) != 1) {
+                error("l is not a scalar");
+        }
+        if (length(var) != 1) {
+                error("var is not a scalar");
+        }
+
+        /* compute kernel */
+        PROTECT(ans = allocMatrix(REALSXP, nx, ny));
+        rans = REAL(ans);
+        for(i = 0; i < nx; i++) {
+                for(j = 0; j < ny; j++) {
+                        norm = (rx[i + nx*0] - ry[j + ny*0])*(rx[i + nx*0] - ry[j + ny*0])
+                             + (rx[i + nx*1] - ry[j + ny*1])*(rx[i + nx*1] - ry[j + ny*1]);
+                        rans[i + nx*j] =
+                                (*rvar)*exp(-1.0/(2.0*(*rl)*(*rl))*norm);
                 }
         }
         UNPROTECT(1);
