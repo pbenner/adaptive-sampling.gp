@@ -16,7 +16,6 @@
 
 library("mvtnorm")
 library("Matrix")
-library("ggplot2")
 
 new.gp <- function(x, mu.prior, kernelf, sigma=NULL)
 {
@@ -37,6 +36,10 @@ new.gp <- function(x, mu.prior, kernelf, sigma=NULL)
   class(gp) <- "gp"
 
   return (gp)
+}
+
+dim.gp <- function(gp) {
+  dim(gp$x)[2]
 }
 
 partially.apply <- function(f, ...) {
@@ -113,33 +116,6 @@ bound <- function(line, range=c(0,1))
   tmp0 <- sapply(line, function(x) min(x, range[2]))
   tmp1 <- sapply(tmp0, function(x) max(x, range[1]))
   return (tmp1)
-}
-
-plot.gp <- function(gp, s=NULL)
-{
-  col <- rgb(8/255, 81/255, 156/255, alpha=0.625)
-  
-  plot(gp$x, gp$mu, 'n', xlab="x", ylab="p", ylim=c(0,1))
-
-  var <- diag(gp$sigma)
-  z1  <- bound(gp$mu + 2*sqrt(var))
-  z2  <- bound(gp$mu - 2*sqrt(var))
-  
-  polygon(c(gp$x, rev(gp$x)), c(z1, rev(z2)),
-     col = col, border = NA)
-
-  lines(gp$x, gp$mu, 'l', lwd=3)
-
-  if (!is.null(s)) {
-    # if this is a scalar, then it specifies the number of samples
-    if (!is.matrix(s)) {
-      s <- samples(gp, s)
-    }
-    # otherwise it contains already samples
-    for (i in 1:dim(s)[1]) {
-      lines(gp$x, bound(s[i,]), 'l', lwd=0.5)
-    }
-  }
 }
 
 # Example
