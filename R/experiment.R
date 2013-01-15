@@ -51,6 +51,18 @@ add.measurement.experiment <- function(experiment, x, counts)
   }
 }
 
+get.counts <- function(experiment)
+{
+  counts <- NULL
+  for (key in ls(envir=experiment$data)) {
+    value <- key2value(key)
+    for (i in 1:sum(e$data[[key]])) {
+      counts <- rbind(counts, value)
+    }
+  }
+  return (counts)
+}
+
 dirichlet.moments <- function(alpha)
 {
   expectation <- rep(0, length(alpha))
@@ -110,5 +122,5 @@ posterior.experiment <- function(experiment, x)
 plot.experiment <- function(experiment, x, ...)
 {
   gp <- posterior(e, x)
-  plot(gp, ...)
+  plot(gp, counts=get.counts(experiment), ...)
 }

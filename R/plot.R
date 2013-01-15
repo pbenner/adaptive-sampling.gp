@@ -45,9 +45,9 @@ plot.gp.1d <- function(gp, s=NULL)
   }
 }
 
-plot.gp.2d <- function(gp, f=NULL, main="")
+plot.gp.2d <- function(gp, counts=NULL, f=NULL, main="")
 {
-  p1 <- ggplot(data = data.frame(x = gp$x[,1], y = gp$x[,2], z = gp$mu),
+  p1 <- ggplot(data = data.frame(x = gp$x[,1], y = gp$x[,2], z = bound(gp$mu, c(0,1))),
                aes(x = x, y = y, z = z)) +
         stat_contour() +
         geom_tile(aes(fill=z)) +
@@ -69,7 +69,14 @@ plot.gp.2d <- function(gp, f=NULL, main="")
                  scale_fill_gradient2(limits=c(0, 1), low=muted("green"), mid="white", high=muted("red"), midpoint=0.5) +
                  ggtitle("Ground truth")
 
-    grid.arrange(p1, p2, p3, ncol=2, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
+    p4 <- ggplot(data = data.frame(x = counts[,1], y = counts[,2]),
+                 aes(x = x, y = y)) +
+                 stat_bin2d() +
+                 scale_fill_gradient(low="white", high=muted("red")) +
+                 ggtitle("Counts")
+#    p4 + xlim(p3$coordinates$limits)
+
+    grid.arrange(p1, p2, p3, p4, ncol=2, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
   }
   else {
     grid.arrange(p1, p2, ncol=2, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
