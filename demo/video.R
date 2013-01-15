@@ -49,7 +49,7 @@ x           <- as.matrix(expand.grid(x = 0:20/4, y = 0:20/4))
 # positions where samples can be drawn
 x.sampling  <- as.matrix(expand.grid(x = 1:4, y = 1:4))
 
-for (i in 1:40) {
+for (i in 1:250) {
   sample.with.gt(e, x.sampling, new.gt.f(f))
   png(filename=sprintf("plot_%03d.png", i),
       width = 1200, height = 800)

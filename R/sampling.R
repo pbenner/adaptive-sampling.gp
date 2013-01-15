@@ -56,7 +56,7 @@ sample.with.gt <- function(experiment, x, gt, N=1)
     # draw a new sample from the ground truth
     counts            <- c(0, 0)
     counts[gt(x[k,])] <- 1
-    add.measurement(experiment, x[k], counts)
+    add.measurement(experiment, x[k,], counts)
   }
 }
 
