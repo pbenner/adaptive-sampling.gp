@@ -107,8 +107,8 @@ posterior.experiment <- function(experiment, x)
   return (gp)
 }
 
-plot.experiment <- function(experiment, x)
+plot.experiment <- function(experiment, x, ...)
 {
   gp <- posterior(e, x)
-  plot(gp)
+  plot(gp, ...)
 }

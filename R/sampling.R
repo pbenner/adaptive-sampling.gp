@@ -23,16 +23,20 @@ utility <- function(experiment, ...)
 
 utility.experiment <- function(experiment, x)
 {
-  L   <- length(x) # number of possible stimuli
+  if (is.vector(x)) {
+    x <- as.matrix(x)
+  }
+  
+  L   <- dim(x)[1] # number of possible stimuli
   gp0 <- posterior(experiment, x)
-  ut  <- rep(0.0, L)
+  ut  <- as.matrix(rep(0.0, L))
   
   for (i in 1:L) {
-    add.measurement(experiment, x[i], c( 1, 0))
+    add.measurement(experiment, x[i,], c( 1, 0))
     gp1 <- posterior(experiment, x)
-    add.measurement(experiment, x[i], c(-1, 1))
+    add.measurement(experiment, x[i,], c(-1, 1))
     gp2 <- posterior(experiment, x)
-    add.measurement(experiment, x[i], c( 0,-1))
+    add.measurement(experiment, x[i,], c( 0,-1))
 
     p     <- bound(gp0$mu[i], c(0, 1))
     ut[i] <- ut[i] +    p *kl.divergence(gp0, gp1)
@@ -50,8 +54,8 @@ sample.with.gt <- function(experiment, x, gt, N=1)
     # choose one of them at random
     k  <- which.is.max(ut)
     # draw a new sample from the ground truth
-    counts          <- c(0, 0)
-    counts[gt(x[k])] <- 1
+    counts            <- c(0, 0)
+    counts[gt(x[k,])] <- 1
     add.measurement(experiment, x[k], counts)
   }
 }
@@ -60,6 +64,19 @@ new.gt <- function(x, y)
 {
   gt <- function(xt) {
     if (runif(1, 0, 1) <= y[x == xt]) {
+      return (1)
+    }
+    else {
+      return (2)
+    }
+  }
+  return (gt)
+}
+
+new.gt.f <- function(f)
+{
+  gt <- function(xt) {
+    if (runif(1, 0, 1) <= f(xt)) {
       return (1)
     }
     else {
