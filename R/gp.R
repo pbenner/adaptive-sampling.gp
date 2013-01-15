@@ -137,8 +137,8 @@ plot(gp, samples(gp, 100))
 # 2D
 ################################################################################
 
-data     <- as.matrix(expand.grid(x = 1:20/4, y = 1:20/4))
-gp       <- new.gp(data, 0.5, kernel.exponential(2, 1))
+x  <- as.matrix(expand.grid(x = 1:20/4, y = 1:20/4))
+gp <- new.gp(x, 0.5, kernel.exponential(2, 1))
 
 xp <- matrix(0,2, nrow=2)
 xp[1,] <- c(2,2)
@@ -150,12 +150,4 @@ ep <- c(0.001, 0.001)
 
 gp <- posterior(gp, xp, yp, ep)
 
-
-p <- ggplot(data = data.frame(x = data[,1], y = data[,2], z = gp$mu),
-            aes(x = x, y = y, z = z))
-p + geom_tile(aes(fill=z)) + stat_contour()
-
-p <- ggplot(data = data.frame(x = data[,1], y = data[,2], z = diag(gp$sigma)),
-            aes(x = x, y = y, z = z))
-p + geom_tile(aes(fill=z)) + stat_contour()
-
+plot(gp)

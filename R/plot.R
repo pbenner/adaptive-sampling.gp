@@ -15,6 +15,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 library("ggplot2")
+library("gridExtra")
 
 plot.gp.1d <- function(gp, s=NULL)
 {
@@ -45,9 +46,19 @@ plot.gp.1d <- function(gp, s=NULL)
 
 plot.gp.2d <- function(gp)
 {
-  p <- ggplot(data = data.frame(x = gp$x[,1], y = gp$x[,2], z = gp$mu),
-              aes(x = x, y = y, z = z))
-  p + geom_tile(aes(fill=z)) + stat_contour()
+  p1 <- ggplot(data = data.frame(x = gp$x[,1], y = gp$x[,2], z = gp$mu),
+               aes(x = x, y = y, z = z)) +
+        stat_contour() +
+        geom_tile(aes(fill=z)) +
+        ggtitle("Expected value")
+  
+  p2 <- ggplot(data = data.frame(x = gp$x[,1], y = gp$x[,2], z = diag(gp$sigma)),
+               aes(x = x, y = y, z = z)) +
+        geom_tile(aes(fill=z)) +
+        stat_contour() +
+        ggtitle("Variance")
+  
+  grid.arrange(p1, p2, ncol=2)
 }
 
 plot.gp <- function(gp, ...)
