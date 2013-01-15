@@ -33,7 +33,7 @@ SEXP exponential_kernel_1d(SEXP x, SEXP y, SEXP l, SEXP var)
         double *ry   = REAL(y);
         double *rl   = REAL(l);
         double *rvar = REAL(var);
-        double *rans;
+        double *rans, norm;
         SEXP ans, dim;
 
         /* check input */
@@ -59,8 +59,9 @@ SEXP exponential_kernel_1d(SEXP x, SEXP y, SEXP l, SEXP var)
         rans = REAL(ans);
         for(i = 0; i < nx; i++) {
                 for(j = 0; j < ny; j++) {
+                        norm = (rx[i] - ry[j])*(rx[i] - ry[j]);
                         rans[i + nx*j] =
-                                (*rvar)*exp(-1.0/(2.0*(*rl)*(*rl))*(rx[i] - ry[j])*(rx[i] - ry[j]));
+                                (*rvar)*exp(-1.0/(2.0*(*rl)*(*rl))*norm);
                 }
         }
         UNPROTECT(1);

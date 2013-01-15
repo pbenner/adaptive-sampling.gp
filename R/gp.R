@@ -1,7 +1,22 @@
+# Copyright (C) 2013 Philipp Benner
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-require("mvtnorm")
-require("Matrix")
-require("ggplot2")
+library("mvtnorm")
+library("Matrix")
+library("ggplot2")
 
 new.gp <- function(x, mu.prior, kernelf, sigma=NULL)
 {
@@ -29,31 +44,6 @@ partially.apply <- function(f, ...) {
   function(...) {
     do.call(f, c(capture, list(...)))
   }
-}
-
-kernel.exponential <- function(l, var)
-{
-  f <- function(x, y) {
-    n <- dim(x)[1]
-    m <- dim(y)[1]
-    result      <- matrix(0.0, n*m)
-    dim(result) <- c(n, m)
-    for (i in 1:n) {
-      for (j in 1:m) {
-        result[i,j] <- var*exp(-1.0/(2.0*l^2)*(x[i]-y[j])^2)
-      }
-    }
-    return (result)
-  }
-  return (f)
-}
-
-kernel.exponential <- function(l, var)
-{
-  f <- function(x, y) {
-    kernel.exponential.c.2d(x, y, l, var)
-  }
-  return (f)
 }
 
 posterior <- function(gp, ...)
@@ -155,7 +145,7 @@ plot.gp <- function(gp, s=NULL)
 # Example
 ################################################################################
 
-gp <- new.gp(1:100/20, 0.5, kernel.exponential(10, 1))
+gp <- new.gp(1:100/20, 0.5, kernel.exponential(1, 1))
 
 xp <- c(1, 2, 3)
 yp <- c(0.7, 0.7, 0.7)
@@ -168,265 +158,10 @@ plot(gp)
 
 plot(gp, samples(gp, 100))
 
-# Experiment
-################################################################################
-
-new.experiment <- function(alpha,
-                           # the kernel.type is a partially applied
-                           # kernel function, which still has a free
-                           # variance parameter
-                           kernel.type=partially.apply(kernel.exponential, 1.0))
-{
-  experiment        <- list(alpha       = alpha,       # Dirichlet pseudo counts
-                            data        = new.env(),   # experimental data
-                            kernel.type = kernel.type) # kernel function
-  class(experiment) <- "experiment"
-
-  return (experiment)
-}
-
-add.measurement <- function(experiment, ...)
-{
-  UseMethod("add.measurement")
-}
-
-add.measurement.experiment <- function(experiment, x, counts)
-{
-  key <- toString(x)
-
-  if (is.null(experiment$data[[key]])) {
-    experiment$data[[key]] <- counts
-  }
-  else {
-    experiment$data[[key]] <- experiment$data[[key]] + counts
-  }
-  if (all(experiment$data[[key]] == 0)) {
-    rm(list = key, envir=experiment$data)
-  }
-}
-
-dirichlet.moments <- function(alpha)
-{
-  expectation <- rep(0, length(alpha))
-  variance    <- rep(0, length(alpha))
-
-  alpha0      <- sum(alpha)
-  
-  for (i in 1:length(alpha)) {
-    expectation[i] <- alpha[i]/alpha0
-    variance[i]    <- alpha[i]*(alpha0 - alpha[i])/(alpha0^2*(alpha0 + 1))
-  }
-  
-  result <- list(expectation = expectation, variance = variance)
-
-  return (result)
-}
-
-posterior.experiment <- function(experiment, x)
-{
-  # get prior pseudocounts
-  alpha             <- experiment$alpha
-  # determine prior expectation and standard deviation
-  prior.moments     <- dirichlet.moments(alpha)
-  # the prior expectation sets the mean of the GP
-  prior.expectation <- prior.moments$expectation[1]
-  # and the variance is used in the kernel function
-  prior.variance    <- prior.moments$variance[1]
-  # generate a kernel which is limited by the prior variance
-  kernelf           <- experiment$kernel.type(prior.variance)
-  # construct the gaussian process
-  gp                <- new.gp(x, prior.expectation, kernelf)
-
-  if (length(experiment$data) > 0) {
-    # we have measurements...
-    xp <- c() # position
-    yp <- c() # mean
-    ep <- c() # variance
-
-    for (key in ls(envir=experiment$data)) {
-      xt      <- as.numeric(key)
-      counts  <- experiment$data[[key]]
-
-      moments <- dirichlet.moments(counts + alpha)
-
-      xp <- append(xp, xt)
-      yp <- append(yp, moments$expectation[1])
-      ep <- append(ep, moments$variance[1])
-    }
-    # compute the posterior of the gaussian process
-    gp <- posterior(gp, xp, yp, ep)
-  }
-
-  return (gp)
-}
-
-plot.experiment <- function(experiment, x)
-{
-  gp <- posterior(e, x)
-  plot(gp)
-}
-
-# Example
-################################################################################
-
-e <- new.experiment(c(2.0,2.0))
-add.measurement(e, 1, c(100,3))
-add.measurement(e, 2, c( 90,1))
-add.measurement(e, 3, c(100,4))
-
-gp <- posterior(e, 1:100/20)
-plot(gp)
-
-e <- new.experiment(c(2.0,2.0))
-add.measurement(e, 1, c( 1,4))
-add.measurement(e, 2, c( 1,3))
-add.measurement(e, 3, c( 1,6))
-
-gp <- posterior(e, 1:100/20)
-plot(gp, samples(gp, 10))
-
-# Information measures
-################################################################################
-
-kl.divergence <- function(gp, ...)
-{
-  UseMethod("kl.divergence")
-}
-
-kl.divergence.gp <- function(gp0, gp1)
-{
-  mu0    <- gp0$mu
-  mu1    <- gp1$mu
-  sigma0 <- gp0$sigma
-  sigma1 <- gp1$sigma
-
-  N      <- length(mu0)
-
-  L0inv  <- solve(chol(sigma0))
-  L1inv  <- solve(chol(sigma1))
-  
-  tmp1   <- log(det((sigma1 %*% L0inv) %*% t(L0inv)))
-  tmp2   <- sum(diag(L1inv %*% (t(L1inv) %*% sigma0)))
-  tmp3   <- (mu0 - mu1) %*% (L1inv %*% (t(L1inv) %*% (mu0 - mu1)))
-  
-  return (1/2*drop(tmp1 + tmp2 + tmp3 - N))
-}
-
-# Example
-################################################################################
-
-e <- new.experiment(c(2.0,2.0))
-#add.measurement(e, 1, c( 1,4))
-#add.measurement(e, 2, c( 1,3))
-gp0 <- posterior(e, 1:100/20)
-
-add.measurement(e, 2, c( 0,1))
-gp1 <- posterior(e, 1:100/20)
-
-add.measurement(e, 2.5, c( 0,1))
-gp2 <- posterior(e, 1:100/20)
-
-kl.divergence(gp0, gp1)
-kl.divergence(gp0, gp2)
-
-# Sampling
-################################################################################
-
-library(nnet) # which.is.max
-
-utility <- function(experiment, ...)
-{
-  UseMethod("utility")
-}
-
-utility.experiment <- function(experiment, x)
-{
-  L   <- length(x) # number of possible stimuli
-  gp0 <- posterior(experiment, x)
-  ut  <- rep(0.0, L)
-  
-  for (i in 1:L) {
-    add.measurement(experiment, x[i], c( 1, 0))
-    gp1 <- posterior(experiment, x)
-    add.measurement(experiment, x[i], c(-1, 1))
-    gp2 <- posterior(experiment, x)
-    add.measurement(experiment, x[i], c( 0,-1))
-
-    p     <- bound(gp0$mu[i], c(0, 1))
-    ut[i] <- ut[i] +    p *kl.divergence(gp0, gp1)
-    ut[i] <- ut[i] + (1-p)*kl.divergence(gp0, gp2)
-  }
-  return (ut)
-}
-
-sample.with.gt <- function(experiment, x, gt, N=1)
-{
-  for (i in 1:N) {
-    # compute utility for every position
-    ut <- utility(experiment, x)
-    # select best position; if multiple global maxima exist then
-    # choose one of them at random
-    k  <- which.is.max(ut)
-    # draw a new sample from the ground truth
-    counts          <- c(0, 0)
-    counts[gt(x[k])] <- 1
-    add.measurement(experiment, x[k], counts)
-  }
-}
-
-new.gt <- function(x, y)
-{
-  gt <- function(xt) {
-    if (runif(1, 0, 1) <= y[x == xt]) {
-      return (1)
-    }
-    else {
-      return (2)
-    }
-  }
-  return (gt)
-}
-
-# Example
-################################################################################
-
-e  <- new.experiment(c(2.0,2.0))
-x  <- 1:10/2
-gt <- new.gt(x,
-             c(0.977895, 0.959606, 0.927331, 0.872769, 0.786948,
-               0.666468, 0.523201, 0.388603, 0.307012, 0.327954))
-
-sample.with.gt(e, x, gt)
-plot(e, 1:100/20)
-
-# Video
-################################################################################
-
-x        <- 0:100/20
-theta    <- (1-tanh(-50:50/20))/2.5+0.1
-
-e        <- new.experiment(c(1.0,1.0),
-                           partially.apply(kernel.exponential, 0.8))
-sample.x <- 0:10/2
-gt       <- new.gt(x, theta)
-
-for (i in 1:200) {
-  sample.with.gt(e, sample.x, gt)
-  png(filename=sprintf("plot_%03d.png", i),
-      width = 1200, height = 800)
-  plot(e, x)
-  title(main = sprintf("%d samples", i))
-  lines(x, theta, 'l', lwd=3, col='red')
-  dev.off()
-}
-
-# mencoder mf://plot_*.png -mf type=png:fps=4 -ovc lavc -lavcopts
-# vcodec=mpeg4 -oac copy -o plot.avi
-
 # 2D
 ################################################################################
 
-data     <- as.matrix(expand.grid(x = 1:40/4, y = 1:40/4))
+data     <- as.matrix(expand.grid(x = 1:20/4, y = 1:20/4))
 gp       <- new.gp(data, 0.5, kernel.exponential(2, 1))
 
 xp <- matrix(0,2, nrow=2)
@@ -448,44 +183,3 @@ p <- ggplot(data = data.frame(x = data[,1], y = data[,2], z = diag(gp$sigma)),
             aes(x = x, y = y, z = z))
 p + geom_tile(aes(fill=z)) + stat_contour()
 
-
-# kernel interface
-################################################################################
-
-dyn.load("../src/gp.so")
-
-dyn.load("/home/philipp/Source/adaptive-sampling/adaptive-sampling/R/gp/src/gp.so")
-
-kernel.exponential.c.1d <- function(x, y, l, var)
-{
-  storage.mode(x)   <- "double"
-  storage.mode(y)   <- "double"
-  storage.mode(l)   <- "double"
-  storage.mode(var) <- "double"
-
-  if (!is.matrix(x)) {
-    x <- as.matrix(x)
-  }
-  if (!is.matrix(y)) {
-    y <- as.matrix(y)
-  }
-
-  .Call("exponential_kernel_1d", x, y, l, var)
-}
-
-kernel.exponential.c.2d <- function(x, y, l, var)
-{
-  storage.mode(x)   <- "double"
-  storage.mode(y)   <- "double"
-  storage.mode(l)   <- "double"
-  storage.mode(var) <- "double"
-
-  if (!is.matrix(x)) {
-    x <- as.matrix(x)
-  }
-  if (!is.matrix(y)) {
-    y <- as.matrix(y)
-  }
-
-  .Call("exponential_kernel_2d", x, y, l, var)
-}
