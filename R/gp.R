@@ -117,37 +117,3 @@ bound <- function(line, range=c(0,1))
   tmp1 <- sapply(tmp0, function(x) max(x, range[1]))
   return (tmp1)
 }
-
-# Example
-################################################################################
-
-gp <- new.gp(1:100/20, 0.5, kernel.exponential(1, 1))
-
-xp <- c(1, 2, 3)
-yp <- c(0.7, 0.7, 0.7)
-# measurement noise
-ep <- c(0.01, 0.01, 0.01)
-
-gp <- posterior(gp, xp, yp, ep)
-
-plot(gp)
-
-plot(gp, samples(gp, 100))
-
-# 2D
-################################################################################
-
-x  <- as.matrix(expand.grid(x = 1:20/4, y = 1:20/4))
-gp <- new.gp(x, 0.5, kernel.exponential(2, 1))
-
-xp <- matrix(0,2, nrow=2)
-xp[1,] <- c(2,2)
-xp[1,] <- c(4,4)
-
-yp <- c(0.2, 0.8)
-# measurement noise
-ep <- c(0.001, 0.001)
-
-gp <- posterior(gp, xp, yp, ep)
-
-plot(gp)

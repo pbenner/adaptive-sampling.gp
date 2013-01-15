@@ -1,0 +1,5 @@
+experiment	Simulate an experiment
+gp1d		Generate and plot a 1-dimensional Gaussian process
+gp2d		Generate and plot a 2-dimensional Gaussian process
+sampling	Demonstrate how to draw a sample
+video		Compile a video from a sampling experiment
