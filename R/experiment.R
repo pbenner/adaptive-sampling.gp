@@ -14,6 +14,9 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+key2value <- function(key) drop(sapply(strsplit(key, ","), FUN=as.numeric))
+value2key <- function(value) toString(value)
+
 new.experiment <- function(alpha,
                            # the kernel.type is a partially applied
                            # kernel function, which still has a free
@@ -35,7 +38,7 @@ add.measurement <- function(experiment, ...)
 
 add.measurement.experiment <- function(experiment, x, counts)
 {
-  key <- toString(x)
+  key <- value2key(x)
 
   if (is.null(experiment$data[[key]])) {
     experiment$data[[key]] <- counts
@@ -82,19 +85,20 @@ posterior.experiment <- function(experiment, x)
 
   if (length(experiment$data) > 0) {
     # we have measurements...
-    xp <- c() # position
-    yp <- c() # mean
-    ep <- c() # variance
+    xp <- matrix(0, dim(gp), nrow=length(experiment$data)) # position
+    yp <- matrix(0, 1,       nrow=length(experiment$data)) # mean
+    ep <- matrix(0, 1,       nrow=length(experiment$data)) # variance
 
-    for (key in ls(envir=experiment$data)) {
-      xt      <- as.numeric(key)
+    for (i in 1:length(experiment$data)) {
+      key     <- ls(envir=experiment$data)[i]
+      xt      <- key2value(key)
       counts  <- experiment$data[[key]]
 
       moments <- dirichlet.moments(counts + alpha)
 
-      xp <- append(xp, xt)
-      yp <- append(yp, moments$expectation[1])
-      ep <- append(ep, moments$variance[1])
+      xp[i,] <- xt
+      yp[i,] <- moments$expectation[1]
+      ep[i,] <- moments$variance[1]
     }
     # compute the posterior of the gaussian process
     gp <- posterior(gp, xp, yp, ep)
