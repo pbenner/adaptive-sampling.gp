@@ -29,7 +29,7 @@
 #' @import ggplot2
 #' @import gridExtra
 #' @import scales
-#' @useDynLib gp
+#' @useDynLib adaptive.sampling.gp
 NULL
 
 library("mvtnorm")
