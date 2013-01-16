@@ -14,10 +14,23 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-kl.divergence <- function(gp, ...)
+#' Compute the Kullback-Leibler divergence between two models
+#' 
+#' @param model for instance a Gaussian process
+#' @param ... arguments to be passed to methods
+#' @export
+
+kl.divergence <- function(model, ...)
 {
   UseMethod("kl.divergence")
 }
+
+#' Compute the Kullback-Leibler divergence between two Gaussian
+#' processes
+#' 
+#' @param gp0 first Gaussian process
+#' @param gp1 second Gaussian process
+#' @method kl.divergence gp
 
 kl.divergence.gp <- function(gp0, gp1)
 {
@@ -37,20 +50,3 @@ kl.divergence.gp <- function(gp0, gp1)
   
   return (1/2*drop(tmp1 + tmp2 + tmp3 - N))
 }
-
-# Example
-################################################################################
-
-e <- new.experiment(c(2.0,2.0))
-#add.measurement(e, 1, c( 1,4))
-#add.measurement(e, 2, c( 1,3))
-gp0 <- posterior(e, 1:100/20)
-
-add.measurement(e, 2, c( 0,1))
-gp1 <- posterior(e, 1:100/20)
-
-add.measurement(e, 2.5, c( 0,1))
-gp2 <- posterior(e, 1:100/20)
-
-kl.divergence(gp0, gp1)
-kl.divergence(gp0, gp2)

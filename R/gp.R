@@ -14,8 +14,35 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+#' @name gp
+#' @docType package
+#' @title Implements a predictive approach to non-parametric inference for adaptive sampling
+#' @author Philipp Benner \email{Philipp.Benner@@mis.mpg.de}, Tobias Elze \email{Tobias.Elze@@schepens.harvard.edu}
+#' @references
+#'  Poppe, S, Benner, P, Elze, T.
+#'  A predictive approach to nonparametric inference for adaptive
+#'  sequential sampling of psychophysical experiments.
+#'  Journal of Mathematical Psychology 56 (2012) 179-195
+#' @import nnet
+#' @import mvtnorm
+#' @import Matrix
+#' @import ggplot2
+#' @import gridExtra
+#' @import scales
+#' @useDynLib gp
+NULL
+
 library("mvtnorm")
 library("Matrix")
+
+#' Generate a new Gaussian process
+#' 
+#' @param x positions of random variables
+#' @param mu.prior prior mean
+#' @param kernelf kernel function
+#' @param sigma covariance matrix (optional)
+#' @exportClass gp
+#' @export
 
 new.gp <- function(x, mu.prior, kernelf, sigma=NULL)
 {
@@ -38,21 +65,33 @@ new.gp <- function(x, mu.prior, kernelf, sigma=NULL)
   return (gp)
 }
 
+#' Show the dimension of the GP
+#' 
+#' @param gp Gaussian process
+#' @method dim gp
+
 dim.gp <- function(gp) {
   dim(gp$x)[2]
 }
 
-partially.apply <- function(f, ...) {
-  capture <- list(...)
-  function(...) {
-    do.call(f, c(capture, list(...)))
-  }
-}
+#' Compute posterior of a Gaussian process or an experiment
+#' 
+#' @param model Gaussian process or experiment
+#' @param ... arguments to be passed to methods
+#' @export
 
-posterior <- function(gp, ...)
+posterior <- function(model, ...)
 {
   UseMethod("posterior")
 }
+
+#' Compute posterior of a Gaussian process
+#' 
+#' @param gp Gaussian process
+#' @param xp positions of measurements
+#' @param yp measured values
+#' @param noise uncertainty of measurements (optional)
+#' @method posterior gp
 
 posterior.gp <- function(gp, xp, yp, noise=NULL)
 {
@@ -98,22 +137,26 @@ posterior.gp <- function(gp, xp, yp, noise=NULL)
   return (gp)
 }
 
-samples <- function(gp, ...)
+#' Draw samples from a process model
+#' 
+#' @param model Gaussian process or experment
+#' @param ... arguments to be passed to methods
+#' @export
+
+samples <- function(model, ...)
 {
   UseMethod("samples")
 }
+
+#' Draw samples from a process model
+#' 
+#' @param gp Gaussian process or experment
+#' @param n number of samples
+#' @method samples gp
 
 samples.gp <- function(gp, n=1)
 {
   x <- rmvnorm(n=n, mean=gp$mu, sigma=gp$sigma, method="chol")
 
   return (x)
-}
-
-bound <- function(line, range=c(0,1))
-{
-  # bound function values in the inverval given by range
-  tmp0 <- sapply(line, function(x) min(x, range[2]))
-  tmp1 <- sapply(tmp0, function(x) max(x, range[1]))
-  return (tmp1)
 }

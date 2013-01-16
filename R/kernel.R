@@ -14,8 +14,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-dyn.load("../src/gp.so")
-
 kernel.exponential.c.1d <- function(x, y, l, var)
 {
   storage.mode(x)   <- "double"
@@ -30,7 +28,7 @@ kernel.exponential.c.1d <- function(x, y, l, var)
     y <- as.matrix(y)
   }
 
-  .Call("exponential_kernel_1d", x, y, l, var)
+  .Call("exponential_kernel_1d", x, y, l, var, PACKAGE="gp")
 }
 
 kernel.exponential.c.2d <- function(x, y, l, var)
@@ -47,7 +45,7 @@ kernel.exponential.c.2d <- function(x, y, l, var)
     y <- as.matrix(y)
   }
 
-  .Call("exponential_kernel_2d", x, y, l, var)
+  .Call("exponential_kernel_2d", x, y, l, var, PACKAGE="gp")
 }
 
 kernel.exponential <- function(l, var)
@@ -66,6 +64,12 @@ kernel.exponential <- function(l, var)
   }
   return (f)
 }
+
+#' Generate a squared exponential kernel
+#' 
+#' @param l length scale
+#' @param var noise variance
+#' @export
 
 kernel.exponential <- function(l, var)
 {

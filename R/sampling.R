@@ -16,10 +16,22 @@
 
 library(nnet) # which.is.max
 
+#' Compute the utility of an experiment
+#' 
+#' @param experiment an object of class experiment
+#' @param ... arguments to be passed to methods
+#' @export
+
 utility <- function(experiment, ...)
 {
   UseMethod("utility")
 }
+
+#' Compute the utility of an experiment
+#' 
+#' @param experiment an object of class experiment
+#' @param x positions where to evaluate the experiment
+#' @method utility experiment
 
 utility.experiment <- function(experiment, x)
 {
@@ -45,6 +57,14 @@ utility.experiment <- function(experiment, x)
   return (ut)
 }
 
+#' Simulate an experiment by taking samples from a ground truth
+#' 
+#' @param experiment an object of class experiment
+#' @param x positions where to evaluate the experiment
+#' @param gt the ground truth
+#' @param N number of samples
+#' @export
+
 sample.with.gt <- function(experiment, x, gt, N=1)
 {
   for (i in 1:N) {
@@ -60,6 +80,12 @@ sample.with.gt <- function(experiment, x, gt, N=1)
   }
 }
 
+#' Generate a new ground truth from a vector of binomial parameters
+#' 
+#' @param x positions
+#' @param y values of the ground truth
+#' @export
+
 new.gt <- function(x, y)
 {
   gt <- function(xt) {
@@ -72,6 +98,11 @@ new.gt <- function(x, y)
   }
   return (gt)
 }
+
+#' Generate a new ground truth from a function
+#' 
+#' @param f function that specifies the ground truth
+#' @export
 
 new.gt.f <- function(f)
 {

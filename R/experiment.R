@@ -17,6 +17,13 @@
 key2value <- function(key) drop(sapply(strsplit(key, ","), FUN=as.numeric))
 value2key <- function(value) toString(value)
 
+#' Generate a new experiment
+#' 
+#' @param alpha Dirichlet pseudocounts
+#' @param kernel.type partially applied kernel function
+#' @exportClass experiment
+#' @export
+
 new.experiment <- function(alpha,
                            # the kernel.type is a partially applied
                            # kernel function, which still has a free
@@ -31,10 +38,23 @@ new.experiment <- function(alpha,
   return (experiment)
 }
 
+#' Add measurements
+#' 
+#' @param experiment an object of class experiment
+#' @param ... arguments to be passed to methods
+#' @export
+
 add.measurement <- function(experiment, ...)
 {
   UseMethod("add.measurement")
 }
+
+#' Add measurements
+#' 
+#' @param experiment an object of class experiment
+#' @param x position of the measurement
+#' @param counts measured binomial data
+#' @method add.measurement experiment
 
 add.measurement.experiment <- function(experiment, x, counts)
 {
@@ -56,29 +76,18 @@ get.counts <- function(experiment)
   counts <- NULL
   for (key in ls(envir=experiment$data)) {
     value <- key2value(key)
-    for (i in 1:sum(e$data[[key]])) {
+    for (i in 1:sum(experiment$data[[key]])) {
       counts <- rbind(counts, value)
     }
   }
   return (counts)
 }
 
-dirichlet.moments <- function(alpha)
-{
-  expectation <- rep(0, length(alpha))
-  variance    <- rep(0, length(alpha))
-
-  alpha0      <- sum(alpha)
-  
-  for (i in 1:length(alpha)) {
-    expectation[i] <- alpha[i]/alpha0
-    variance[i]    <- alpha[i]*(alpha0 - alpha[i])/(alpha0^2*(alpha0 + 1))
-  }
-  
-  result <- list(expectation = expectation, variance = variance)
-
-  return (result)
-}
+#' Compute posterior of an experiment
+#' 
+#' @param experiment an object of class experiment
+#' @param x positions where to evaluate the posterior
+#' @method posterior experiment
 
 posterior.experiment <- function(experiment, x)
 {
@@ -117,10 +126,4 @@ posterior.experiment <- function(experiment, x)
   }
 
   return (gp)
-}
-
-plot.experiment <- function(experiment, x, ...)
-{
-  gp <- posterior(e, x)
-  plot(gp, counts=get.counts(experiment), ...)
 }

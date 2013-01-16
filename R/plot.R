@@ -16,7 +16,7 @@
 
 library("ggplot2")
 library("gridExtra")
-library(scales)
+library("scales")
 
 plot.gp.1d <- function(gp, s=NULL)
 {
@@ -48,40 +48,45 @@ plot.gp.1d <- function(gp, s=NULL)
 plot.gp.2d <- function(gp, counts=NULL, f=NULL, main="")
 {
   p1 <- ggplot(data = data.frame(x = gp$x[,1], y = gp$x[,2], z = bound(gp$mu, c(0,1))),
-               aes(x = x, y = y, z = z)) +
+               aes_string(x = "x", y = "y", z = "z")) +
+        geom_tile(aes_string(fill="z")) +
         stat_contour() +
-        geom_tile(aes(fill=z)) +
         scale_fill_gradient2(limits=c(0, 1), low=muted("green"), mid="white", high=muted("red"), midpoint=0.5) +
         ggtitle("Expected value")
   
   p2 <- ggplot(data = data.frame(x = gp$x[,1], y = gp$x[,2], z = diag(gp$sigma)),
-               aes(x = x, y = y, z = z)) +
-        geom_tile(aes(fill=z)) +
+               aes_string(x = "x", y = "y", z = "z")) +
+        geom_tile(aes_string(fill="z")) +
         stat_contour() +
         scale_fill_gradient(limits=c(0, 0.1), low="white", high=muted("green")) +
         ggtitle("Variance")
   
   if (!is.null(f)) {
     p3 <- ggplot(data = data.frame(x = gp$x[,1], y = gp$x[,2], z = f(gp$x)),
-                 aes(x = x, y = y, z = z)) +
+                 aes_string(x = "x", y = "y", z = "z")) +
+                 geom_tile(aes_string(fill="z")) +
                  stat_contour() +
-                 geom_tile(aes(fill=z)) +
                  scale_fill_gradient2(limits=c(0, 1), low=muted("green"), mid="white", high=muted("red"), midpoint=0.5) +
                  ggtitle("Ground truth")
 
     p4 <- ggplot(data = data.frame(x = counts[,1], y = counts[,2]),
-                 aes(x = x, y = y)) +
+                 aes_string(x = "x", y = "y")) +
                  stat_bin2d() +
                  scale_fill_gradient(low="white", high=muted("red")) +
                  ggtitle("Counts")
-#    p4 + xlim(p3$coordinates$limits)
-
+    
     grid.arrange(p1, p2, p3, p4, ncol=2, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
   }
   else {
     grid.arrange(p1, p2, ncol=2, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
   }
 }
+
+#' Plot a Gaussian process
+#' 
+#' @param gp Gaussian process
+#' @param ... arguments to be passed to methods
+#' @method plot gp
 
 plot.gp <- function(gp, ...)
 {
@@ -94,4 +99,17 @@ plot.gp <- function(gp, ...)
   else {
     stop("Gaussian process has invalid dimension.")
   }
+}
+
+#' Plot an experiment
+#' 
+#' @param experiment an object of class experiment
+#' @param x positions where to plot the posterior
+#' @param ... arguments to be passed to methods
+#' @method plot experiment
+
+plot.experiment <- function(experiment, x, ...)
+{
+  gp <- posterior(experiment, x)
+  plot(gp, counts=get.counts(experiment), ...)
 }
