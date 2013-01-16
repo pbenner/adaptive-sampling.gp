@@ -1,4 +1,4 @@
-Package: gp
+Package: adaptive.sampling.gp
 Maintainer: Philipp Benner <philipp.benner@mis.mpg.de>
 License: GPL-2
 Title: wrapper for the prombs library

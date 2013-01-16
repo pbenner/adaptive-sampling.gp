@@ -14,7 +14,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#' @name gp
+#' @name adaptive.sampling.gp
 #' @docType package
 #' @title Implements a predictive approach to non-parametric inference for adaptive sampling
 #' @author Philipp Benner \email{Philipp.Benner@@mis.mpg.de}, Tobias Elze \email{Tobias.Elze@@schepens.harvard.edu}
