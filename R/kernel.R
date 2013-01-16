@@ -28,7 +28,7 @@ kernel.exponential.c.1d <- function(x, y, l, var)
     y <- as.matrix(y)
   }
 
-  .Call("exponential_kernel_1d", x, y, l, var, PACKAGE="gp")
+  .Call("exponential_kernel_1d", x, y, l, var, PACKAGE="adaptive.sampling.gp")
 }
 
 kernel.exponential.c.2d <- function(x, y, l, var)
@@ -45,7 +45,7 @@ kernel.exponential.c.2d <- function(x, y, l, var)
     y <- as.matrix(y)
   }
 
-  .Call("exponential_kernel_2d", x, y, l, var, PACKAGE="gp")
+  .Call("exponential_kernel_2d", x, y, l, var, PACKAGE="adaptive.sampling.gp")
 }
 
 kernel.exponential <- function(l, var)
