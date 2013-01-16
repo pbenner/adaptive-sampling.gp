@@ -23,12 +23,12 @@
 #'  A predictive approach to nonparametric inference for adaptive
 #'  sequential sampling of psychophysical experiments.
 #'  Journal of Mathematical Psychology 56 (2012) 179-195
-#' @import nnet
 #' @import mvtnorm
-#' @import Matrix
 #' @import ggplot2
-#' @import gridExtra
 #' @import scales
+#' @importFrom Matrix nearPD
+#' @importFrom gridExtra grid.arrange
+#' @importFrom nnet which.is.max
 #' @useDynLib adaptive.sampling.gp
 NULL
 
