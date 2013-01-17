@@ -84,12 +84,16 @@ plot.gp.2d <- function(gp, counts=NULL, f=NULL, main="")
 
 #' Plot a Gaussian process
 #' 
-#' @param gp Gaussian process
+#' @param x Gaussian process
+#' @param y unused
 #' @param ... arguments to be passed to methods
 #' @method plot gp
+#' @S3method plot gp
 
-plot.gp <- function(gp, ...)
+plot.gp <- function(x, y=NULL, ...)
 {
+  gp <- x
+  
   if (dim(gp) == 1) {
     plot.gp.1d(gp, ...)
   }
@@ -103,13 +107,14 @@ plot.gp <- function(gp, ...)
 
 #' Plot an experiment
 #' 
-#' @param experiment an object of class experiment
-#' @param x positions where to plot the posterior
+#' @param x an object of class experiment
+#' @param y positions where to plot the posterior
 #' @param ... arguments to be passed to methods
 #' @method plot experiment
+#' @S3method plot experiment
 
-plot.experiment <- function(experiment, x, ...)
+plot.experiment <- function(x, y, ...)
 {
-  gp <- posterior(experiment, x)
-  plot(gp, counts=get.counts(experiment), ...)
+  gp <- posterior(x, y)
+  plot(gp, counts=get.counts(x), ...)
 }

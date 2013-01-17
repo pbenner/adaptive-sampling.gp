@@ -14,7 +14,35 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-library(nnet) # which.is.max
+library("mvtnorm")
+library("nnet") # which.is.max
+
+#' Draw samples from a process model
+#' 
+#' @param model Gaussian process or experment
+#' @param ... arguments to be passed to methods
+#' @export
+
+samples <- function(model, ...)
+{
+  UseMethod("samples")
+}
+
+#' Draw samples from a process model
+#' 
+#' @param model Gaussian process or experment
+#' @param n number of samples
+#' @param ... unused
+#' @method samples gp
+#' @S3method samples gp
+
+samples.gp <- function(model, n=1, ...)
+{
+  gp <- model
+  x  <- rmvnorm(n=n, mean=gp$mu, sigma=gp$sigma, method="chol")
+
+  return (x)
+}
 
 #' Compute the utility of an experiment
 #' 
@@ -31,9 +59,11 @@ utility <- function(experiment, ...)
 #' 
 #' @param experiment an object of class experiment
 #' @param x positions where to evaluate the experiment
+#' @param ... unused
 #' @method utility experiment
+#' @S3method utility experiment
 
-utility.experiment <- function(experiment, x)
+utility.experiment <- function(experiment, x, ...)
 {
   if (is.vector(x)) {
     x <- as.matrix(x)

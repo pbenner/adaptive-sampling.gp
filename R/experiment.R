@@ -21,7 +21,6 @@ value2key <- function(value) toString(value)
 #' 
 #' @param alpha Dirichlet pseudocounts
 #' @param kernel.type partially applied kernel function
-#' @exportClass experiment
 #' @export
 
 new.experiment <- function(alpha,
@@ -54,9 +53,11 @@ add.measurement <- function(experiment, ...)
 #' @param experiment an object of class experiment
 #' @param x position of the measurement
 #' @param counts measured binomial data
+#' @param ... unused
 #' @method add.measurement experiment
+#' @S3method add.measurement experiment
 
-add.measurement.experiment <- function(experiment, x, counts)
+add.measurement.experiment <- function(experiment, x, counts, ...)
 {
   key <- value2key(x)
 
@@ -85,12 +86,15 @@ get.counts <- function(experiment)
 
 #' Compute posterior of an experiment
 #' 
-#' @param experiment an object of class experiment
+#' @param model an object of class experiment
 #' @param x positions where to evaluate the posterior
+#' @param ... unused
 #' @method posterior experiment
+#' @S3method posterior experiment
 
-posterior.experiment <- function(experiment, x)
+posterior.experiment <- function(model, x, ...)
 {
+  experiment        <- model
   # get prior pseudocounts
   alpha             <- experiment$alpha
   # determine prior expectation and standard deviation

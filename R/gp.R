@@ -32,7 +32,6 @@
 #' @useDynLib adaptive.sampling.gp
 NULL
 
-library("mvtnorm")
 library("Matrix")
 
 #' Generate a new Gaussian process
@@ -41,7 +40,6 @@ library("Matrix")
 #' @param mu.prior prior mean
 #' @param kernelf kernel function
 #' @param sigma covariance matrix (optional)
-#' @exportClass gp
 #' @export
 
 new.gp <- function(x, mu.prior, kernelf, sigma=NULL)
@@ -67,11 +65,12 @@ new.gp <- function(x, mu.prior, kernelf, sigma=NULL)
 
 #' Show the dimension of the GP
 #' 
-#' @param gp Gaussian process
+#' @param x Gaussian process
 #' @method dim gp
+#' @S3method dim gp
 
-dim.gp <- function(gp) {
-  dim(gp$x)[2]
+dim.gp <- function(x) {
+  dim(x$x)[2]
 }
 
 #' Compute posterior of a Gaussian process or an experiment
@@ -87,14 +86,17 @@ posterior <- function(model, ...)
 
 #' Compute posterior of a Gaussian process
 #' 
-#' @param gp Gaussian process
+#' @param model Gaussian process
 #' @param xp positions of measurements
 #' @param yp measured values
 #' @param noise uncertainty of measurements (optional)
+#' @param ... unused
 #' @method posterior gp
+#' @S3method posterior gp
 
-posterior.gp <- function(gp, xp, yp, noise=NULL)
+posterior.gp <- function(model, xp, yp, noise=NULL, ...)
 {
+  gp <- model
   # check arguments
   if (!is.matrix(xp)) {
     xp <- as.matrix(xp)
@@ -135,28 +137,4 @@ posterior.gp <- function(gp, xp, yp, noise=NULL)
   gp$sigma <- as.matrix(nearPD(gp$sigma)$mat)
 
   return (gp)
-}
-
-#' Draw samples from a process model
-#' 
-#' @param model Gaussian process or experment
-#' @param ... arguments to be passed to methods
-#' @export
-
-samples <- function(model, ...)
-{
-  UseMethod("samples")
-}
-
-#' Draw samples from a process model
-#' 
-#' @param gp Gaussian process or experment
-#' @param n number of samples
-#' @method samples gp
-
-samples.gp <- function(gp, n=1)
-{
-  x <- rmvnorm(n=n, mean=gp$mu, sigma=gp$sigma, method="chol")
-
-  return (x)
 }
