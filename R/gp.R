@@ -49,10 +49,6 @@ new.gp <- function(x, mu.prior, kernelf, range=NULL, sigma=NULL)
     x <- as.matrix(x)
   }
   mu <- rep(mu.prior[1], dim(x)[1])
-
-  if (is.null(sigma)) {
-    sigma <- as.matrix(nearPD(kernelf(x, x))$mat)
-  }
   
   gp <- list(x        = x,              # where to evaluate the gp
              kernelf  = kernelf,        # kernel function

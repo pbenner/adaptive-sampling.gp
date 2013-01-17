@@ -22,7 +22,7 @@ plot.gp.1d <- function(gp, s=NULL)
 {
   col <- rgb(8/255, 81/255, 156/255, alpha=0.625)
   
-  plot(gp$x, gp$mu, 'n', xlab="x", ylab="p", ylim=c(0,1))
+  p <- plot(gp$x, gp$mu, 'n', xlab="x", ylab="p", ylim=c(0,1))
 
   var <- diag(gp$sigma)
   if (is.null(gp$range)) {
@@ -49,6 +49,7 @@ plot.gp.1d <- function(gp, s=NULL)
       lines(gp$x, bound(s[i,]), 'l', lwd=0.5)
     }
   }
+  return (p)
 }
 
 plot.gp.2d <- function(gp, counts=NULL, f=NULL, main="", plot.variance=TRUE)
@@ -86,16 +87,17 @@ plot.gp.2d <- function(gp, counts=NULL, f=NULL, main="", plot.variance=TRUE)
                  scale_fill_gradient(low="white", high=muted("red")) +
                  ggtitle("Counts")
     
-    grid.arrange(p1, p2, p3, p4, ncol=2, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
+    g <- grid.arrange(p1, p2, p3, p4, ncol=2, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
   }
   else {
     if (plot.variance) {
-      grid.arrange(p1, p2, ncol=2, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
+      g <- grid.arrange(p1, p2, ncol=2, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
     }
     else {
-      grid.arrange(p1, ncol=1, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
+      g <- grid.arrange(p1, ncol=1, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
     }
   }
+  return (g)
 }
 
 #' Plot a Gaussian process
@@ -111,14 +113,15 @@ plot.gp <- function(x, y=NULL, ...)
   gp <- x
   
   if (dim(gp) == 1) {
-    plot.gp.1d(gp, ...)
+    p <- plot.gp.1d(gp, ...)
   }
   else if (dim(gp) == 2) {
-    plot.gp.2d(gp, ...)
+    p <- plot.gp.2d(gp, ...)
   }
   else {
     stop("Gaussian process has invalid dimension.")
   }
+  return (p)
 }
 
 #' Plot an experiment
@@ -132,5 +135,6 @@ plot.gp <- function(x, y=NULL, ...)
 plot.experiment <- function(x, y, ...)
 {
   gp <- posterior(x, y)
-  plot(gp, counts=get.counts(x), ...)
+  p  <- plot(gp, counts=get.counts(x), ...)
+  return (p)
 }
