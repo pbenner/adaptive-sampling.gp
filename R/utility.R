@@ -39,6 +39,12 @@ bound <- function(line, range=c(0,1))
   return (tmp1)
 }
 
+#' Partially apply a function to its arguments
+#' 
+#' @param f function
+#' @param ... set of arguments
+#' @export
+
 partially.apply <- function(f, ...) {
   capture <- list(...)
   function(...) {
