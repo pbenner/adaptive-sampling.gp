@@ -14,7 +14,6 @@ Date/Publication: 2012-03-03 03:28:12
 Packaged: 2012-03-03 20:34:30 UTC; philipp
 Depends:
     R (>= 2.10.0),
-    methods,
     nnet,
     mvtnorm,
     Matrix,
