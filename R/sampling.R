@@ -80,7 +80,7 @@ utility.experiment <- function(experiment, x, ...)
     gp2 <- posterior(experiment, x)
     add.measurement(experiment, x[i,], c( 0,-1))
 
-    p     <- bound(gp0$mu[i], c(0, 1))
+    p     <- gp0$mu[i]
     ut[i] <- ut[i] +    p *kl.divergence(gp0, gp1)
     ut[i] <- ut[i] + (1-p)*kl.divergence(gp0, gp2)
   }

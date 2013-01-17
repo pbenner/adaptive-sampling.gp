@@ -106,7 +106,7 @@ posterior.experiment <- function(model, x, ...)
   # generate a kernel which is limited by the prior variance
   kernelf           <- experiment$kernel.type(prior.variance)
   # construct the gaussian process
-  gp                <- new.gp(x, prior.expectation, kernelf)
+  gp                <- new.gp(x, prior.expectation, kernelf, range=c(0,1))
 
   if (length(experiment$data) > 0) {
     # we have measurements...

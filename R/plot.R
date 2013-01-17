@@ -25,8 +25,14 @@ plot.gp.1d <- function(gp, s=NULL)
   plot(gp$x, gp$mu, 'n', xlab="x", ylab="p", ylim=c(0,1))
 
   var <- diag(gp$sigma)
-  z1  <- bound(gp$mu + 2*sqrt(var))
-  z2  <- bound(gp$mu - 2*sqrt(var))
+  if (is.null(gp$range)) {
+    z1  <- gp$mu + 2*sqrt(var)
+    z2  <- gp$mu - 2*sqrt(var)
+  }
+  else {
+    z1  <- bound(gp$mu + 2*sqrt(var))
+    z2  <- bound(gp$mu - 2*sqrt(var))
+  }
   
   polygon(c(gp$x, rev(gp$x)), c(z1, rev(z2)),
      col = col, border = NA)
@@ -45,28 +51,33 @@ plot.gp.1d <- function(gp, s=NULL)
   }
 }
 
-plot.gp.2d <- function(gp, counts=NULL, f=NULL, main="")
+plot.gp.2d <- function(gp, counts=NULL, f=NULL, main="", plot.variance=TRUE)
 {
-  p1 <- ggplot(data = data.frame(x = gp$x[,1], y = gp$x[,2], z = bound(gp$mu, c(0,1))),
+  p1 <- ggplot(data = data.frame(x = gp$x[,1], y = gp$x[,2], z = gp$mu),
                aes_string(x = "x", y = "y", z = "z")) +
-        geom_tile(aes_string(fill="z")) +
+        geom_tile(aes_string(fill="z"), limits=c(min(gp$mu), max(gp$mu))) +
         stat_contour() +
-        scale_fill_gradient2(limits=c(0, 1), low=muted("green"), mid="white", high=muted("red"), midpoint=0.5) +
+        scale_fill_gradient2(limits=gp$range, low=muted("green"), mid="white", high=muted("red")) +
         ggtitle("Expected value")
-  
-  p2 <- ggplot(data = data.frame(x = gp$x[,1], y = gp$x[,2], z = diag(gp$sigma)),
-               aes_string(x = "x", y = "y", z = "z")) +
-        geom_tile(aes_string(fill="z")) +
-        stat_contour() +
-        scale_fill_gradient(limits=c(0, 0.1), low="white", high=muted("green")) +
-        ggtitle("Variance")
+
+  if (plot.variance) {
+    p2 <- ggplot(data = data.frame(x = gp$x[,1], y = gp$x[,2], z = diag(gp$sigma)),
+                 aes_string(x = "x", y = "y", z = "z")) +
+                 geom_tile(aes_string(fill="z")) +
+                 stat_contour() +
+                 scale_fill_gradient(limits=c(0, 0.1), low="white", high=muted("green")) +
+                 ggtitle("Variance")
+  }
+  else {
+    p2 <- NULL
+  }
   
   if (!is.null(f)) {
     p3 <- ggplot(data = data.frame(x = gp$x[,1], y = gp$x[,2], z = f(gp$x)),
                  aes_string(x = "x", y = "y", z = "z")) +
                  geom_tile(aes_string(fill="z")) +
                  stat_contour() +
-                 scale_fill_gradient2(limits=c(0, 1), low=muted("green"), mid="white", high=muted("red"), midpoint=0.5) +
+                 scale_fill_gradient2(limits=gp$range, low=muted("green"), mid="white", high=muted("red"), midpoint=0.5) +
                  ggtitle("Ground truth")
 
     p4 <- ggplot(data = data.frame(x = counts[,1], y = counts[,2]),
@@ -78,7 +89,12 @@ plot.gp.2d <- function(gp, counts=NULL, f=NULL, main="")
     grid.arrange(p1, p2, p3, p4, ncol=2, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
   }
   else {
-    grid.arrange(p1, p2, ncol=2, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
+    if (plot.variance) {
+      grid.arrange(p1, p2, ncol=2, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
+    }
+    else {
+      grid.arrange(p1, ncol=1, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
+    }
   }
 }
 

@@ -39,10 +39,11 @@ library("Matrix")
 #' @param x positions of random variables
 #' @param mu.prior prior mean
 #' @param kernelf kernel function
+#' @param range restrict the GP to a certain interval
 #' @param sigma covariance matrix (optional)
 #' @export
 
-new.gp <- function(x, mu.prior, kernelf, sigma=NULL)
+new.gp <- function(x, mu.prior, kernelf, range=NULL, sigma=NULL)
 {
   if (!is.matrix(x)) {
     x <- as.matrix(x)
@@ -56,6 +57,7 @@ new.gp <- function(x, mu.prior, kernelf, sigma=NULL)
   gp <- list(x        = x,              # where to evaluate the gp
              kernelf  = kernelf,        # kernel function
              mu.prior = mu.prior,       # prior mean
+             range    = range,          # restricted range
              mu       = mu,             # mean
              sigma    = sigma)
   class(gp) <- "gp"
@@ -104,7 +106,7 @@ posterior.gp <- function(model, xp, yp, noise=NULL, ...)
   if (!is.matrix(yp)) {
     yp <- as.matrix(yp)
   }
-  if (!is.matrix(noise)) {
+  if (!is.null(noise) && !is.matrix(noise)) {
     noise <- as.matrix(noise)
   }
   # compute posterior...
@@ -120,7 +122,7 @@ posterior.gp <- function(model, xp, yp, noise=NULL, ...)
     A <- k0
   }
   else if (dim(noise)[1] == 1) {
-    A <- k0 + noise
+    A <- k0 + diag(rep(noise, dim(xp)[1]))
   }
   else {
     A <- k0 + diag(as.vector(noise))
@@ -130,6 +132,10 @@ posterior.gp <- function(model, xp, yp, noise=NULL, ...)
 
   gp$mu    <- drop(mu + (k2 %*% Linv) %*% (t(Linv) %*% (yp - mu)))
   gp$sigma <- k3 - (k2 %*% Linv) %*% (t(Linv) %*% k1)
+
+  if (!is.null(gp$range)) {
+    gp$mu  <- bound(gp$mu, gp$range)
+  }
 
   # the resulting matrix is usually not positive definite due to
   # numerical errors; use nearPD to compute the nearest positive
