@@ -58,7 +58,8 @@ plot.gp.2d <- function(gp, counts=NULL, f=NULL, main="", plot.variance=TRUE)
                aes_string(x = "x", y = "y", z = "z")) +
         geom_tile(aes_string(fill="z"), limits=c(min(gp$mu), max(gp$mu))) +
         stat_contour() +
-        scale_fill_gradient2(limits=gp$range, low=muted("green"), mid="white", high=muted("red")) +
+#        scale_fill_gradient2(limits=gp$range, low=muted("green"), mid="white", high=muted("red")) +
+        scale_fill_gradient2(limits=gp$range, low=muted("green"), mid =muted("red"), high="white") +
         ggtitle("Expected value")
 
   if (plot.variance) {
