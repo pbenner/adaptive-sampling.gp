@@ -52,14 +52,13 @@ plot.gp.1d <- function(gp, s=NULL)
   return (p)
 }
 
-plot.gp.2d <- function(gp, counts=NULL, f=NULL, main="", plot.variance=TRUE)
+plot.gp.2d <- function(gp, counts=NULL, f=NULL, main="", plot.variance=TRUE, low=muted("green"), mid="white", high=muted("red"))
 {
   p1 <- ggplot(data = data.frame(x = gp$x[,1], y = gp$x[,2], z = gp$mu),
                aes_string(x = "x", y = "y", z = "z")) +
         geom_tile(aes_string(fill="z"), limits=c(min(gp$mu), max(gp$mu))) +
         stat_contour() +
-#        scale_fill_gradient2(limits=gp$range, low=muted("green"), mid="white", high=muted("red")) +
-        scale_fill_gradient2(limits=gp$range, low=muted("green"), mid =muted("red"), high="white") +
+        scale_fill_gradient2(limits=gp$range, low=low, mid=mid, high=high) +
         ggtitle("Expected value")
 
   if (plot.variance) {
@@ -67,11 +66,8 @@ plot.gp.2d <- function(gp, counts=NULL, f=NULL, main="", plot.variance=TRUE)
                  aes_string(x = "x", y = "y", z = "z")) +
                  geom_tile(aes_string(fill="z")) +
                  stat_contour() +
-                 scale_fill_gradient(limits=c(0, 0.1), low="white", high=muted("green")) +
+                 scale_fill_gradient(limits=c(0, 0.1), low=mid, high=high) +
                  ggtitle("Variance")
-  }
-  else {
-    p2 <- NULL
   }
   
   if (!is.null(f)) {
@@ -79,26 +75,28 @@ plot.gp.2d <- function(gp, counts=NULL, f=NULL, main="", plot.variance=TRUE)
                  aes_string(x = "x", y = "y", z = "z")) +
                  geom_tile(aes_string(fill="z")) +
                  stat_contour() +
-                 scale_fill_gradient2(limits=gp$range, low=muted("green"), mid="white", high=muted("red"), midpoint=0.5) +
+                 scale_fill_gradient2(limits=gp$range, low=low, mid=mid, high=high, midpoint=0.5) +
                  ggtitle("Ground truth")
 
     p4 <- ggplot(data = data.frame(x = counts[,1], y = counts[,2]),
                  aes_string(x = "x", y = "y")) +
                  stat_bin2d() +
-                 scale_fill_gradient(low="white", high=muted("red")) +
+                 scale_fill_gradient(low=mid, high=high) +
                  ggtitle("Counts")
     
-    g <- grid.arrange(p1, p2, p3, p4, ncol=2, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
+    grid.arrange(p1, p2, p3, p4, ncol=2, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
+    return (list(p1, p2, p3, p4))
   }
   else {
     if (plot.variance) {
-      g <- grid.arrange(p1, p2, ncol=2, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
+      grid.arrange(p1, p2, ncol=2, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
+      return (list(p1, p2))
     }
     else {
-      g <- grid.arrange(p1, ncol=1, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
+      grid.arrange(p1, ncol=1, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
+      return (list(p1))
     }
   }
-  return (g)
 }
 
 #' Plot a Gaussian process
