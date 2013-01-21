@@ -28,12 +28,15 @@ kl.divergence <- function(model, ...)
 #' Compute the Kullback-Leibler divergence between two Gaussian
 #' processes
 #' 
-#' @param gp0 first Gaussian process
+#' @param model first Gaussian process
 #' @param gp1 second Gaussian process
+#' @param ... unused
 #' @method kl.divergence gp
+#' @S3method kl.divergence gp
 
-kl.divergence.gp <- function(gp0, gp1)
+kl.divergence.gp <- function(model, gp1, ...)
 {
+  gp0    <- model
   mu0    <- gp0$mu
   mu1    <- gp1$mu
   sigma0 <- gp0$sigma
