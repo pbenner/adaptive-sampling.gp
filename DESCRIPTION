@@ -29,3 +29,4 @@ Collate:
     'plot.R'
     'sampling.R'
     'utility.R'
+    'link.R'

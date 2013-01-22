@@ -23,11 +23,9 @@ value2key <- function(value) toString(value)
 #' @param kernel.type partially applied kernel function
 #' @export
 
-new.experiment <- function(alpha,
-                           kernelf=kernel.exponential(1, 1))
+new.experiment <- function(kernelf=kernel.exponential(1, 1))
 {
-  experiment        <- list(alpha   = alpha,    # Dirichlet pseudo counts
-                            data    = new.env(),# experimental data
+  experiment        <- list(data    = new.env(),# experimental data
                             kernelf = kernelf)  # kernel function
   class(experiment) <- "experiment"
 
@@ -117,7 +115,8 @@ posterior.experiment <- function(model, x, ...)
     result   <- approximate.posterior(xp, yp, k0, new.link())
     # which is a gaussian with mean mu and covariance sigma
     gp$mu    <- k2 %*% result$d
-    gp$sigma <- k3 - k2 %*% result$sigma %*% k1
+    v        <- solve(result$L) %*% (sqrt(result$W) %*% k1)
+    gp$sigma <- k3 - t(v) %*% v
   }
 
   return (gp)
@@ -162,7 +161,7 @@ approximate.posterior.step <- function(f, yp, K, link, N)
   return (f)
 }
 
-approximate.posterior <- function(xp, yp, K, link, epsilon=0.001)
+approximate.posterior <- function(xp, yp, K, link, epsilon=0.00001)
 {
   # number of positions where measurements are available
   N <- dim(xp)[[1]]
@@ -182,10 +181,13 @@ approximate.posterior <- function(xp, yp, K, link, epsilon=0.001)
   d <- derivative$d
   W <- derivative$W
   B <- diag(N) + sqrt(W) %*% K %*% sqrt(W)
-  # and compute the result, i.e. the covarience matrix
-  result <- list(d     = d,
-                 f     = f,
-                 sigma = K - K %*% sqrt(W) %*% solve(B) %*% sqrt(W) %*% K)
+  L <- t(chol(B))
+  # and compute the result, what is needed later...
+  result <- list(# for the expectation we need the derivative
+                 d = d,
+                 # and for the variance L and W
+                 L = L,
+                 W = W)
 
   return (result)
 }
