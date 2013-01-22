@@ -24,14 +24,11 @@ value2key <- function(value) toString(value)
 #' @export
 
 new.experiment <- function(alpha,
-                           # the kernel.type is a partially applied
-                           # kernel function, which still has a free
-                           # variance parameter
-                           kernel.type=partially.apply(kernel.exponential, 1.0))
+                           kernelf=kernel.exponential(1, 1))
 {
-  experiment        <- list(alpha       = alpha,       # Dirichlet pseudo counts
-                            data        = new.env(),   # experimental data
-                            kernel.type = kernel.type) # kernel function
+  experiment        <- list(alpha   = alpha,    # Dirichlet pseudo counts
+                            data    = new.env(),# experimental data
+                            kernelf = kernelf)  # kernel function
   class(experiment) <- "experiment"
 
   return (experiment)
@@ -94,40 +91,101 @@ get.counts <- function(experiment)
 
 posterior.experiment <- function(model, x, ...)
 {
-  experiment        <- model
-  # get prior pseudocounts
-  alpha             <- experiment$alpha
-  # determine prior expectation and standard deviation
-  prior.moments     <- dirichlet.moments(alpha)
-  # the prior expectation sets the mean of the GP
-  prior.expectation <- prior.moments$expectation[1]
-  # and the variance is used in the kernel function
-  prior.variance    <- prior.moments$variance[1]
-  # generate a kernel which is limited by the prior variance
-  kernelf           <- experiment$kernel.type(prior.variance)
+  experiment <- model
   # construct the gaussian process
-  gp                <- new.gp(x, prior.expectation, kernelf, range=c(0,1))
+  gp         <- new.gp(x, 0.0, experiment$kernelf)
 
   if (length(experiment$data) > 0) {
     # we have measurements...
     xp <- matrix(0, dim(gp), nrow=length(experiment$data)) # position
-    yp <- matrix(0, 1,       nrow=length(experiment$data)) # mean
-    ep <- matrix(0, 1,       nrow=length(experiment$data)) # variance
+    yp <- matrix(0, 2,       nrow=length(experiment$data)) # counts
 
     for (i in 1:length(experiment$data)) {
       key     <- ls(envir=experiment$data)[i]
       xt      <- key2value(key)
       counts  <- experiment$data[[key]]
 
-      moments <- dirichlet.moments(counts + alpha)
-
       xp[i,] <- xt
-      yp[i,] <- moments$expectation[1]
-      ep[i,] <- moments$variance[1]
+      yp[i,] <- counts
     }
-    # compute the posterior of the gaussian process
-    gp <- posterior(gp, xp, yp, ep)
+    # evaluate the kernel
+    k0 <- experiment$kernelf(xp, xp)  # K(X , X )
+    k1 <- experiment$kernelf(xp, x )  # K(X , X*)
+    k2 <- t(k1)                       # K(X*, X )
+    k3 <- experiment$kernelf(x,  x )  # K(X*, X*)
+    # approximate the posterior of the gaussian process
+    result   <- approximate.posterior(xp, yp, k0, new.link())
+    # which is a gaussian with mean mu and covariance sigma
+    gp$mu    <- k2 %*% result$d
+    gp$sigma <- k3 - k2 %*% result$sigma %*% k1
   }
 
   return (gp)
+}
+
+approximate.posterior.derivative <- function(f, yp, K, link, N)
+{
+  # d: d/dx log p(y|f)
+  d <- as.matrix(rep(0, N))
+  # W: negative Hessian of log p(y|f)
+  W <- diag(N)
+  for (i in 1:N) {
+    # current f value at x[[i]]
+    fx  <- f[[i]]
+    # counts at position x[[i]]
+    c1  <- yp[[i,1]]
+    c2  <- yp[[i,2]]
+    # value of the response derivative evaluated at fx
+    Nfx <- link$response.derivative(fx)
+    # response evaluated at fx
+    Pfx <- link$response(fx)
+    d[[i]]   <- c1*Nfx/(0+Pfx) - c2*Nfx/(1-Pfx)
+    W[[i,i]] <- c2*(-fx*Nfx/(1-Pfx) + Nfx^2/(1-Pfx)^2) -
+                c1*(-fx*Nfx/(0+Pfx) - Nfx^2/(0+Pfx)^2)
+  }
+  return (list(d = d, W = W))
+}
+
+approximate.posterior.step <- function(f, yp, K, link, N)
+{
+  derivative <- approximate.posterior.derivative(f, yp, K, link, N)
+  # d: d/dx log p(y|f)
+  d <- derivative$d
+  # W: negative Hessian of log p(y|f)
+  W <- derivative$W
+  B <- diag(N) + sqrt(W) %*% K %*% sqrt(W)
+  L <- t(chol(B))
+  b <- W %*% f + d
+  a <- b - sqrt(W) %*% solve(t(L)) %*% (solve(L) %*% (sqrt(W) %*% K %*% b))
+  f <- K %*% a
+
+  return (f)
+}
+
+approximate.posterior <- function(xp, yp, K, link, epsilon=0.001)
+{
+  # number of positions where measurements are available
+  N <- dim(xp)[[1]]
+  # f, fold
+  f     <- as.matrix(rep(0, N))
+  f.old <- as.matrix(rep(0, N))
+  repeat {
+    # run Newton steps until convergence
+    f <- approximate.posterior.step(f, yp, K, link, N)
+    if (norm(f - f.old) < epsilon) {
+      break
+    }
+    f.old <- f
+  }
+  # evaluate the derivative at the current position
+  derivative <- approximate.posterior.derivative(f, yp, K, link, N)
+  d <- derivative$d
+  W <- derivative$W
+  B <- diag(N) + sqrt(W) %*% K %*% sqrt(W)
+  # and compute the result, i.e. the covarience matrix
+  result <- list(d     = d,
+                 f     = f,
+                 sigma = K - K %*% sqrt(W) %*% solve(B) %*% sqrt(W) %*% K)
+
+  return (result)
 }

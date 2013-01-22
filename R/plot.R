@@ -21,8 +21,6 @@ library("scales")
 plot.gp.1d <- function(gp, s=NULL)
 {
   col <- rgb(8/255, 81/255, 156/255, alpha=0.625)
-  
-  p <- plot(gp$x, gp$mu, 'n', xlab="x", ylab="p", ylim=c(0,1))
 
   var <- diag(gp$sigma)
   if (is.null(gp$range)) {
@@ -33,6 +31,9 @@ plot.gp.1d <- function(gp, s=NULL)
     z1  <- bound(gp$mu + 2*sqrt(var))
     z2  <- bound(gp$mu - 2*sqrt(var))
   }
+
+  p <- plot(cbind(gp$x, gp$x, gp$x), cbind(gp$mu, z1, z2),
+            'n', xlab="x", ylab="p", ylim=gp$range)
   
   polygon(c(gp$x, rev(gp$x)), c(z1, rev(z2)),
      col = col, border = NA)
