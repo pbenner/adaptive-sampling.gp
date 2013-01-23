@@ -43,7 +43,7 @@ library("Matrix")
 #' @param sigma covariance matrix (optional)
 #' @export
 
-new.gp <- function(x, mu.prior, kernelf, range=NULL, sigma=NULL)
+new.gp <- function(x, mu.prior, kernelf, range=NULL, sigma=NULL, link=NULL)
 {
   if (!is.matrix(x)) {
     x <- as.matrix(x)
@@ -55,7 +55,8 @@ new.gp <- function(x, mu.prior, kernelf, range=NULL, sigma=NULL)
              mu.prior = mu.prior,       # prior mean
              range    = range,          # restricted range
              mu       = mu,             # mean
-             sigma    = sigma)
+             sigma    = sigma,
+             link     = link)
   class(gp) <- "gp"
 
   return (gp)

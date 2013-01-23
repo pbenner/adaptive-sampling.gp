@@ -23,10 +23,75 @@ new.link <- function(type = "probit")
     result   <- list(link                = qnorm, # link function
                      response            = pnorm, # inverse link function (response)
                      response.derivative = dnorm) # derivative of the response function
-    class(result) <- "link"
+    class(result) <- c("link.probit", "link")
   }
   else {
     stop("Unknown type.")
   }
   return (result)
+}
+
+#' Compute predictive posterior expectation and variance
+#' 
+#' @param model Gaussian process or link function
+#' @param ... arguments to be passed to methods
+#' @export
+
+predictive <- function(model, ...)
+{
+  UseMethod("predictive")
+}
+
+#' Compute predictive posterior expectation and variance
+#' 
+#' @param model NULL object
+#' @param p.mean posterior mean
+#' @param p.variance posterior variance
+#' @param ... unused
+#' @method predictive NULL
+#' @S3method predictive NULL
+
+predictive.NULL <- function(model, p.mean, p.variance, ...)
+{
+  return (list(mean = p.mean, variance = p.variance))
+}
+
+#' Compute predictive posterior expectation and variance
+#' 
+#' @param model GP object
+#' @param p.mean posterior mean
+#' @param p.variance posterior variance
+#' @param ... unused
+#' @method predictive gp
+#' @S3method predictive gp
+
+predictive.gp <- function(model, p.mean, p.variance, ...)
+{
+  return (predictive(gp$link, gp$mu, diag(gp$sigma)))
+}
+
+#' Compute predictive posterior expectation and variance
+#' 
+#' @param model probit link object
+#' @param p.mean posterior mean
+#' @param p.variance posterior variance
+#' @param ... unused
+#' @method predictive link.probit
+#' @S3method predictive link.probit
+
+predictive.link.probit <- function(model, p.mean, p.variance, ...)
+{
+  N        <- length(mu)
+  mean     <- as.matrix(rep(0, N))
+  variance <- as.matrix(rep(0, N))
+
+  for (i in 1:N) {
+    # prepare the covariance matrix
+    sigma <- matrix(c(1+p.variance[i], p.variance[i], p.variance[i], 1+p.variance[i]), 2, 2)
+    # predictive mean
+    mean[i]     <- pnorm(mu, mean=0, sd=sqrt(s2))
+    # and predictive variance
+    variance[i] <- as.numeric(pmvnorm(upper=c(p.mean[i], p.mean[i]), mean=c(0, 0), sigma=sigma)) - mean[i]^2
+  }
+  return (list(mean = mean, variance = variance))
 }

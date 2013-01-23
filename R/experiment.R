@@ -91,7 +91,7 @@ posterior.experiment <- function(model, x, ...)
 {
   experiment <- model
   # construct the gaussian process
-  gp         <- new.gp(x, 0.0, experiment$kernelf)
+  gp         <- new.gp(x, 0.0, experiment$kernelf, range=c(0,1))
   link       <- new.link()
 
   if (length(experiment$data) > 0) {
@@ -118,12 +118,6 @@ posterior.experiment <- function(model, x, ...)
     gp$mu    <- k2 %*% result$d
     v        <- solve(result$L) %*% (sqrt(result$W) %*% k1)
     gp$sigma <- k3 - t(v) %*% v
-
-    # link...
-    mu <- gp$mu
-    s  <- as.matrix(diag(gp$sigma))
-    z  <- mu/sqrt(1+s)
-    gp$mu <- pnorm(mu + s * dnorm(z) / (pnorm(z) * sqrt(1 + s)))
   }
 
   return (gp)

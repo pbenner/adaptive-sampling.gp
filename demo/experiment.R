@@ -13,10 +13,10 @@ plot(gp)
 
 # Experiment 2
 ################################################################################
-e <- new.experiment(kernelf=kernel.exponential(1.0,0.1))
-add.measurement(e, 1, c(1,40))
-add.measurement(e, 2, c( 1,3))
-add.measurement(e, 3, c( 1,6))
+e <- new.experiment(kernelf=kernel.exponential(1.0,0.25))
+add.measurement(e, 1, c( 1, 4))
+add.measurement(e, 2, c( 1, 3))
+add.measurement(e, 3, c( 2, 6))
 
 gp <- posterior(e, 1:100/20)
 plot(gp, samples(gp, 10))
