@@ -14,7 +14,7 @@ plot(gp)
 # Experiment 2
 ################################################################################
 e <- new.experiment(kernelf=kernel.exponential(1.0,0.1))
-add.measurement(e, 1, c(40,40))
+add.measurement(e, 1, c(1,40))
 add.measurement(e, 2, c( 1,3))
 add.measurement(e, 3, c( 1,6))
 
