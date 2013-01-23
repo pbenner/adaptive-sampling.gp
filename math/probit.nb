@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       157,          7]
-NotebookDataLength[      8563,        279]
-NotebookOptionsPosition[      7612,        239]
-NotebookOutlinePosition[      7967,        255]
-CellTagsIndexPosition[      7924,        252]
+NotebookDataLength[      8711,        281]
+NotebookOptionsPosition[      7760,        241]
+NotebookOutlinePosition[      8115,        257]
+CellTagsIndexPosition[      8072,        254]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -25,12 +25,12 @@ Cell["Expectation and variance of the probit model", "Title",
  Background->RGBColor[1, 0.85, 0.85]],
 
 Cell[TextData[{
- "Expectation f(x) = ",
+ "Expectation f(\[Mu],\[Sigma]) = ",
  Cell[BoxData[
   FormBox[
    RowBox[{
     SubsuperscriptBox["\[Integral]", 
-     RowBox[{"-", "\[Infinity]"}], "x"], 
+     RowBox[{"-", "\[Infinity]"}], "\[Infinity]"], 
     RowBox[{
      RowBox[{"\[CapitalPhi]", "(", "y", ")"}], 
      RowBox[{"N", "(", 
@@ -43,7 +43,7 @@ Cell[TextData[{
  CellChangeTimes->{{3.567962588960897*^9, 3.567962627491343*^9}, 
    3.567962698303564*^9, {3.567962817194962*^9, 3.567962822153339*^9}, {
    3.56796285320261*^9, 3.5679629267335167`*^9}, {3.5679629632846193`*^9, 
-   3.567962969834215*^9}},
+   3.567962969834215*^9}, {3.567963915277179*^9, 3.567963929320039*^9}},
  Background->RGBColor[1, 0.85, 0.85]],
 
 Cell[CellGroupData[{
@@ -107,12 +107,14 @@ Cell[BoxData["0.4643650372824013`"], "Output",
 Cell[CellGroupData[{
 
 Cell[TextData[{
- "Variance g(x) = ",
+ "Variance g(",
+ "\[Mu],\[Sigma]",
+ ") = ",
  Cell[BoxData[
   FormBox[
    RowBox[{
     SubsuperscriptBox["\[Integral]", 
-     RowBox[{"-", "\[Infinity]"}], "x"], 
+     RowBox[{"-", "\[Infinity]"}], "\[Infinity]"], 
     RowBox[{
      RowBox[{
       SuperscriptBox["\[CapitalPhi]", "2"], "(", "y", ")"}], 
@@ -125,7 +127,7 @@ Cell[TextData[{
 }], "Subtitle",
  CellChangeTimes->{{3.567962588960897*^9, 3.567962627491343*^9}, {
   3.567962698303564*^9, 3.567962713213525*^9}, {3.5679630298666286`*^9, 
-  3.567963039517426*^9}},
+  3.567963039517426*^9}, {3.567963919856752*^9, 3.567963936083282*^9}},
  Background->RGBColor[1, 0.85, 0.85]],
 
 Cell[CellGroupData[{
@@ -256,28 +258,28 @@ CellTagsIndex->{}
 Notebook[{
 Cell[CellGroupData[{
 Cell[579, 22, 165, 2, 92, "Title"],
-Cell[747, 26, 740, 20, 73, "Subtitle"],
+Cell[747, 26, 809, 20, 73, "Subtitle"],
 Cell[CellGroupData[{
-Cell[1512, 50, 1069, 26, 43, "Input"],
-Cell[2584, 78, 88, 1, 27, "Output"]
+Cell[1581, 50, 1069, 26, 43, "Input"],
+Cell[2653, 78, 88, 1, 27, "Output"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[2709, 84, 549, 16, 61, "Input"],
-Cell[3261, 102, 87, 1, 27, "Output"]
+Cell[2778, 84, 549, 16, 61, "Input"],
+Cell[3330, 102, 87, 1, 27, "Output"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[3385, 108, 690, 20, 73, "Subtitle"],
+Cell[3454, 108, 769, 22, 73, "Subtitle"],
 Cell[CellGroupData[{
-Cell[4100, 132, 904, 24, 49, "Input"],
-Cell[5007, 158, 110, 1, 27, "Output"]
+Cell[4248, 134, 904, 24, 49, "Input"],
+Cell[5155, 160, 110, 1, 27, "Output"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[5154, 164, 1229, 34, 64, "Input"],
-Cell[6386, 200, 257, 4, 27, "Output"]
+Cell[5302, 166, 1229, 34, 64, "Input"],
+Cell[6534, 202, 257, 4, 27, "Output"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[6680, 209, 172, 4, 27, "Input"],
-Cell[6855, 215, 717, 19, 57, "Output"]
+Cell[6828, 211, 172, 4, 27, "Input"],
+Cell[7003, 217, 717, 19, 57, "Output"]
 }, Open  ]]
 }, Open  ]]
 }, Open  ]]
