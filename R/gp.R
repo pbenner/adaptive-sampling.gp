@@ -81,6 +81,8 @@ dim.gp <- function(x) {
 
 predictive.gp <- function(model, ...)
 {
+  gp <- model
+  
   return (predictive(gp$link, gp$mu, diag(gp$sigma)))
 }
 

@@ -72,6 +72,7 @@ utility.experiment <- function(experiment, x, ...)
   L   <- dim(x)[1] # number of possible stimuli
   gp0 <- posterior(experiment, x)
   ut  <- as.matrix(rep(0.0, L))
+  p   <- predictive(gp0)$mean
   
   for (i in 1:L) {
     add.measurement(experiment, x[i,], c( 1, 0))
@@ -80,9 +81,8 @@ utility.experiment <- function(experiment, x, ...)
     gp2 <- posterior(experiment, x)
     add.measurement(experiment, x[i,], c( 0,-1))
 
-    p     <- gp0$mu[i]
-    ut[i] <- ut[i] +    p *kl.divergence(gp0, gp1)
-    ut[i] <- ut[i] + (1-p)*kl.divergence(gp0, gp2)
+    ut[i] <- ut[i] +    p[i] *kl.divergence(gp0, gp1)
+    ut[i] <- ut[i] + (1-p[i])*kl.divergence(gp0, gp2)
   }
   return (ut)
 }
@@ -97,6 +97,9 @@ utility.experiment <- function(experiment, x, ...)
 
 sample.with.gt <- function(experiment, x, gt, N=1)
 {
+  if (is.vector(x)) {
+    x <- as.matrix(x)
+  }
   for (i in 1:N) {
     # compute utility for every position
     ut <- utility(experiment, x)

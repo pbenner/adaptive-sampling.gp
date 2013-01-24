@@ -3,8 +3,7 @@
 x        <- 0:100/20
 theta    <- (1-tanh(-50:50/20))/2.5+0.1
 
-e        <- new.experiment(c(1.0,1.0),
-                           partially.apply(kernel.exponential, 0.8))
+e        <- new.experiment(kernel.exponential(1.0, 0.5))
 sample.x <- 0:10/2
 gt       <- new.gt(x, theta)
 
@@ -94,7 +93,7 @@ x.sampling1 <- as.matrix(expand.grid(x = 0.0:5.0, y = 0.0:5.0))
 x.sampling2 <- as.matrix(expand.grid(x = 0.5:4.5, y = 0.5:4.5))
 
 #for (i in 1:800) {
-for (i in 1:10) {
+for (i in 1:200) {
   if (i %% 2 == 0) {
     sample.with.gt(e, x.sampling1, new.gt.f(f))
   }

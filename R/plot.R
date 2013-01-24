@@ -18,7 +18,7 @@ library("ggplot2")
 library("gridExtra")
 library("scales")
 
-plot.gp.1d <- function(gp, s=NULL)
+plot.gp.1d <- function(gp, s=NULL, ...)
 {
   result <- predictive(gp)
   
@@ -55,7 +55,7 @@ plot.gp.1d <- function(gp, s=NULL)
   }
 }
 
-plot.gp.2d <- function(gp, counts=NULL, f=NULL, main="", plot.variance=TRUE, low=muted("green"), mid="white", high=muted("red"))
+plot.gp.2d <- function(gp, counts=NULL, f=NULL, main="", plot.variance=TRUE, low=muted("green"), mid="white", high=muted("red"), ...)
 {
   result <- predictive(gp)
 
