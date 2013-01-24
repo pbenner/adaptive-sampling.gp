@@ -107,88 +107,8 @@ posterior.experiment <- function(model, x, ...)
       xp[i,] <- xt
       yp[i,] <- counts
     }
-    # evaluate the kernel
-    k0 <- experiment$kernelf(xp, xp)  # K(X , X )
-    k1 <- experiment$kernelf(xp, x )  # K(X , X*)
-    k2 <- t(k1)                       # K(X*, X )
-    k3 <- experiment$kernelf(x,  x )  # K(X*, X*)
-    # approximate the posterior of the gaussian process
-    result   <- approximate.posterior(xp, yp, k0, link)
-    # which is a gaussian with mean mu and covariance sigma
-    gp$mu    <- k2 %*% result$d
-    v        <- solve(result$L) %*% (sqrt(result$W) %*% k1)
-    gp$sigma <- k3 - t(v) %*% v
+    posterior(gp, xp, yp)
   }
 
   return (gp)
-}
-
-approximate.posterior.derivative <- function(f, yp, K, link, N)
-{
-  # d: d/dx log p(y|f)
-  d <- as.matrix(rep(0, N))
-  # W: negative Hessian of log p(y|f)
-  W <- diag(N)
-  for (i in 1:N) {
-    # current f value at x[[i]]
-    fx  <- f[[i]]
-    # counts at position x[[i]]
-    c1  <- yp[[i,1]]
-    c2  <- yp[[i,2]]
-    # value of the response derivative evaluated at fx
-    Nfx <- link$response.derivative(fx)
-    # response evaluated at fx
-    Pfx <- link$response(fx)
-    d[[i]]   <- c1*Nfx/(0+Pfx) - c2*Nfx/(1-Pfx)
-    W[[i,i]] <- c2*(-fx*Nfx/(1-Pfx) + Nfx^2/(1-Pfx)^2) -
-                c1*(-fx*Nfx/(0+Pfx) - Nfx^2/(0+Pfx)^2)
-  }
-  return (list(d = d, W = W))
-}
-
-approximate.posterior.step <- function(f, yp, K, link, N)
-{
-  derivative <- approximate.posterior.derivative(f, yp, K, link, N)
-  # d: d/dx log p(y|f)
-  d <- derivative$d
-  # W: negative Hessian of log p(y|f)
-  W <- derivative$W
-  B <- diag(N) + sqrt(W) %*% K %*% sqrt(W)
-  L <- t(chol(B))
-  b <- W %*% f + d
-  a <- b - sqrt(W) %*% solve(t(L)) %*% (solve(L) %*% (sqrt(W) %*% K %*% b))
-  f <- K %*% a
-
-  return (f)
-}
-
-approximate.posterior <- function(xp, yp, K, link, epsilon=0.00001)
-{
-  # number of positions where measurements are available
-  N <- dim(xp)[[1]]
-  # f, fold
-  f     <- as.matrix(rep(0, N))
-  f.old <- as.matrix(rep(0, N))
-  repeat {
-    # run Newton steps until convergence
-    f <- approximate.posterior.step(f, yp, K, link, N)
-    if (norm(f - f.old) < epsilon) {
-      break
-    }
-    f.old <- f
-  }
-  # evaluate the derivative at the current position
-  derivative <- approximate.posterior.derivative(f, yp, K, link, N)
-  d <- derivative$d
-  W <- derivative$W
-  B <- diag(N) + sqrt(W) %*% K %*% sqrt(W)
-  L <- t(chol(B))
-  # and compute the result, what is needed later...
-  result <- list(# for the expectation we need the derivative
-                 d = d,
-                 # and for the variance L and W
-                 L = L,
-                 W = W)
-
-  return (result)
 }
