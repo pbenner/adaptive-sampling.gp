@@ -90,9 +90,8 @@ get.counts <- function(experiment)
 posterior.experiment <- function(model, x, ...)
 {
   experiment <- model
-  # construct the gaussian process
-  gp         <- new.gp(x, 0.0, experiment$kernelf, range=c(0,1))
-  link       <- new.link()
+  # construct the gaussian process with a link function
+  gp         <- new.gp(x, 0.0, experiment$kernelf, range=c(0,1), link=new.link())
 
   if (length(experiment$data) > 0) {
     # we have measurements...
