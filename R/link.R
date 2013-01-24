@@ -58,20 +58,6 @@ predictive.NULL <- function(model, p.mean, p.variance, ...)
 
 #' Compute predictive posterior expectation and variance
 #' 
-#' @param model GP object
-#' @param p.mean posterior mean
-#' @param p.variance posterior variance
-#' @param ... unused
-#' @method predictive gp
-#' @S3method predictive gp
-
-predictive.gp <- function(model, p.mean, p.variance, ...)
-{
-  return (predictive(gp$link, gp$mu, diag(gp$sigma)))
-}
-
-#' Compute predictive posterior expectation and variance
-#' 
 #' @param model probit link object
 #' @param p.mean posterior mean
 #' @param p.variance posterior variance
@@ -81,7 +67,7 @@ predictive.gp <- function(model, p.mean, p.variance, ...)
 
 predictive.link.probit <- function(model, p.mean, p.variance, ...)
 {
-  N        <- length(mu)
+  N        <- dim(p.mean)[1]
   mean     <- as.matrix(rep(0, N))
   variance <- as.matrix(rep(0, N))
 
@@ -89,7 +75,7 @@ predictive.link.probit <- function(model, p.mean, p.variance, ...)
     # prepare the covariance matrix
     sigma <- matrix(c(1+p.variance[i], p.variance[i], p.variance[i], 1+p.variance[i]), 2, 2)
     # predictive mean
-    mean[i]     <- pnorm(mu, mean=0, sd=sqrt(s2))
+    mean[i]     <- pnorm(p.mean[i], mean=0, sd=sqrt(1+p.variance[i]))
     # and predictive variance
     variance[i] <- as.numeric(pmvnorm(upper=c(p.mean[i], p.mean[i]), mean=c(0, 0), sigma=sigma)) - mean[i]^2
   }

@@ -49,7 +49,7 @@ kl.divergence.gp <- function(model, gp1, ...)
   
   tmp1   <- log(det((sigma1 %*% L0inv) %*% t(L0inv)))
   tmp2   <- sum(diag(L1inv %*% (t(L1inv) %*% sigma0)))
-  tmp3   <- (mu0 - mu1) %*% (L1inv %*% (t(L1inv) %*% (mu0 - mu1)))
+  tmp3   <- t(mu0 - mu1) %*% (L1inv %*% (t(L1inv) %*% (mu0 - mu1)))
   
   return (1/2*drop(tmp1 + tmp2 + tmp3 - N))
 }

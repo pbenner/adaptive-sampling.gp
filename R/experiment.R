@@ -23,7 +23,7 @@ value2key <- function(value) toString(value)
 #' @param kernel.type partially applied kernel function
 #' @export
 
-new.experiment <- function(kernelf=kernel.exponential(1, 1))
+new.experiment <- function(kernelf=kernel.exponential(1, 0.25))
 {
   experiment        <- list(data    = new.env(),# experimental data
                             kernelf = kernelf)  # kernel function
@@ -92,9 +92,11 @@ posterior.experiment <- function(model, x, ...)
   experiment <- model
   # construct the gaussian process with a link function
   gp         <- new.gp(x, 0.0, experiment$kernelf, range=c(0,1), link=new.link())
+  xp         <- NULL
+  yp         <- NULL
 
+  # if we have measurements, add them to xp and yp
   if (length(experiment$data) > 0) {
-    # we have measurements...
     xp <- matrix(0, dim(gp), nrow=length(experiment$data)) # position
     yp <- matrix(0, 2,       nrow=length(experiment$data)) # counts
 
@@ -106,8 +108,10 @@ posterior.experiment <- function(model, x, ...)
       xp[i,] <- xt
       yp[i,] <- counts
     }
-    posterior(gp, xp, yp)
   }
+  # compute the posterior, whether or not measurements
+  # exist
+  gp <- posterior(gp, xp, yp)
 
   return (gp)
 }

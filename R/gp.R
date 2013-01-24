@@ -43,20 +43,20 @@ library("Matrix")
 #' @param sigma covariance matrix (optional)
 #' @export
 
-new.gp <- function(x, mu.prior, kernelf, range=NULL, sigma=NULL, link=NULL)
+new.gp <- function(x, mu.prior, kernelf, range=NULL, link=NULL)
 {
   if (!is.matrix(x)) {
     x <- as.matrix(x)
   }
-  mu <- rep(mu.prior[1], dim(x)[1])
   
   gp <- list(x        = x,              # where to evaluate the gp
              kernelf  = kernelf,        # kernel function
              mu.prior = mu.prior,       # prior mean
              range    = range,          # restricted range
-             mu       = mu,             # mean
-             sigma    = sigma,
-             link     = link)
+             link     = link,           # link (response) function
+             # these are computed by posterior()
+             mu       = NULL,           # posterior mean
+             sigma    = NULL)           # posterior variance
   class(gp) <- "gp"
 
   return (gp)
@@ -70,6 +70,18 @@ new.gp <- function(x, mu.prior, kernelf, range=NULL, sigma=NULL, link=NULL)
 
 dim.gp <- function(x) {
   dim(x$x)[2]
+}
+
+#' Compute predictive posterior expectation and variance
+#' 
+#' @param model GP object
+#' @param ... unused
+#' @method predictive gp
+#' @S3method predictive gp
+
+predictive.gp <- function(model, ...)
+{
+  return (predictive(gp$link, gp$mu, diag(gp$sigma)))
 }
 
 #' Compute posterior of a Gaussian process or an experiment
@@ -96,6 +108,13 @@ posterior <- function(model, ...)
 posterior.gp <- function(model, xp, yp, noise=NULL, ...)
 {
   gp <- model
+  # xp and yp can be NULL
+  if (is.null(xp) || is.null(yp)) {
+    gp$mu    <- as.matrix(rep(gp$mu.prior, dim(gp$x)[1]))
+    gp$sigma <- gp$kernelf(gp$x, gp$x)
+    gp$sigma <- as.matrix(nearPD(gp$sigma)$mat)
+    return (gp)
+  }
   # check arguments
   if (!is.matrix(xp)) {
     xp <- as.matrix(xp)
@@ -116,7 +135,7 @@ posterior.gp <- function(model, xp, yp, noise=NULL, ...)
   if (!is.null(gp$link)) {
     # if so, then call a specialized method
     # approximate the posterior of the gaussian process
-    result   <- approximate.posterior(xp, yp, k0, link)
+    result   <- approximate.posterior(xp, yp, k0, gp$link)
     # which is a gaussian with mean mu and covariance sigma
     gp$mu    <- k2 %*% result$d
     v        <- solve(result$L) %*% (sqrt(result$W) %*% k1)
@@ -136,17 +155,18 @@ posterior.gp <- function(model, xp, yp, noise=NULL, ...)
     L        <- chol(A)
     Linv     <- solve(L)
 
-    gp$mu    <- drop(gp$mu + (k2 %*% Linv) %*% (t(Linv) %*% (yp - gp$mu)))
+    gp$mu    <- drop(gp$mu.prior + (k2 %*% Linv) %*% (t(Linv) %*% (yp - gp$mu.prior)))
     gp$sigma <- k3 - (k2 %*% Linv) %*% (t(Linv) %*% k1)
 
     if (!is.null(gp$range)) {
       gp$mu  <- bound(gp$mu, gp$range)
     }
-    # the resulting matrix is usually not positive definite due to
-    # numerical errors; use nearPD to compute the nearest positive
-    # definite matrix
-    gp$sigma <- as.matrix(nearPD(gp$sigma)$mat)
   }
+  # the resulting matrix is usually not positive definite due to
+  # numerical errors; use nearPD to compute the nearest positive
+  # definite matrix
+  gp$sigma <- as.matrix(nearPD(gp$sigma)$mat)
+
   return (gp)
 }
 

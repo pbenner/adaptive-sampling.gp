@@ -23,8 +23,7 @@ plot(gp, samples(gp, 10))
 
 # Experiment 3
 ################################################################################
-
-e <- new.experiment()
+e <- new.experiment(kernelf=kernel.exponential(1.0,0.25))
 add.measurement(e, c(1,1), c( 1,4))
 add.measurement(e, c(2,2), c( 1,3))
 add.measurement(e, c(3,3), c( 1,6))

@@ -20,25 +20,28 @@ library("scales")
 
 plot.gp.1d <- function(gp, s=NULL)
 {
+  result <- predictive(gp)
+  
   col <- rgb(8/255, 81/255, 156/255, alpha=0.625)
 
-  var <- diag(gp$sigma)
   if (is.null(gp$range)) {
-    z1  <- gp$mu + 2*sqrt(var)
-    z2  <- gp$mu - 2*sqrt(var)
+    z1  <- result$mean + 2*sqrt(result$variance)
+    z2  <- result$mean - 2*sqrt(result$variance)
   }
   else {
-    z1  <- bound(gp$mu + 2*sqrt(var))
-    z2  <- bound(gp$mu - 2*sqrt(var))
+    z1  <- bound(result$mean + 2*sqrt(result$variance))
+    z2  <- bound(result$mean - 2*sqrt(result$variance))
   }
 
-  p <- plot(cbind(gp$x, gp$x, gp$x), cbind(gp$mu, z1, z2),
-            'n', xlab="x", ylab="p", ylim=gp$range)
+  # plot returns nothing, so don't bother to catch the
+  # return value
+  plot(cbind(gp$x, gp$x, gp$x), cbind(result$mean, z1, z2),
+       'n', xlab="x", ylab="p", ylim=gp$range)
   
   polygon(c(gp$x, rev(gp$x)), c(z1, rev(z2)),
      col = col, border = NA)
 
-  lines(gp$x, gp$mu, 'l', lwd=3)
+  lines(gp$x, result$mean, 'l', lwd=3)
 
   if (!is.null(s)) {
     # if this is a scalar, then it specifies the number of samples
@@ -50,20 +53,21 @@ plot.gp.1d <- function(gp, s=NULL)
       lines(gp$x, bound(s[i,]), 'l', lwd=0.5)
     }
   }
-  return (p)
 }
 
 plot.gp.2d <- function(gp, counts=NULL, f=NULL, main="", plot.variance=TRUE, low=muted("green"), mid="white", high=muted("red"))
 {
-  p1 <- ggplot(data = data.frame(x = gp$x[,1], y = gp$x[,2], z = gp$mu),
+  result <- predictive(gp)
+
+  p1 <- ggplot(data = data.frame(x = gp$x[,1], y = gp$x[,2], z = result$mean),
                aes_string(x = "x", y = "y", z = "z")) +
-        geom_tile(aes_string(fill="z"), limits=c(min(gp$mu), max(gp$mu))) +
+        geom_tile(aes_string(fill="z"), limits=c(min(result$mean), max(result$mean))) +
         stat_contour() +
         scale_fill_gradient2(limits=gp$range, low=low, mid=mid, high=high) +
         ggtitle("Expected value")
 
   if (plot.variance) {
-    p2 <- ggplot(data = data.frame(x = gp$x[,1], y = gp$x[,2], z = diag(gp$sigma)),
+    p2 <- ggplot(data = data.frame(x = gp$x[,1], y = gp$x[,2], z = result$variance),
                  aes_string(x = "x", y = "y", z = "z")) +
                  geom_tile(aes_string(fill="z")) +
                  stat_contour() +
@@ -86,16 +90,16 @@ plot.gp.2d <- function(gp, counts=NULL, f=NULL, main="", plot.variance=TRUE, low
                  ggtitle("Counts")
     
     grid.arrange(p1, p2, p3, p4, ncol=2, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
-    return (list(p1, p2, p3, p4))
+    return (invisible(list(p1=p1, p2=p2, p3=p3, p4=p4)))
   }
   else {
     if (plot.variance) {
       grid.arrange(p1, p2, ncol=2, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
-      return (list(p1, p2))
+      return (invisible(list(p1=p1, p2=p2)))
     }
     else {
       grid.arrange(p1, ncol=1, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
-      return (list(p1))
+      return (invisible(list(p1=p1)))
     }
   }
 }
@@ -113,15 +117,14 @@ plot.gp <- function(x, y=NULL, ...)
   gp <- x
   
   if (dim(gp) == 1) {
-    p <- plot.gp.1d(gp, ...)
+    plot.gp.1d(gp, ...)
   }
   else if (dim(gp) == 2) {
-    p <- plot.gp.2d(gp, ...)
+    plot.gp.2d(gp, ...)
   }
   else {
     stop("Gaussian process has invalid dimension.")
   }
-  return (p)
 }
 
 #' Plot an experiment
@@ -135,6 +138,5 @@ plot.gp <- function(x, y=NULL, ...)
 plot.experiment <- function(x, y, ...)
 {
   gp <- posterior(x, y)
-  p  <- plot(gp, counts=get.counts(x), ...)
-  return (p)
+  plot(gp, counts=get.counts(x), ...)
 }
