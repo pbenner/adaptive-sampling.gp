@@ -85,15 +85,15 @@ f <- function(z)
 }
 
 # generate an experiment
-e           <- new.experiment(kernelf=kernel.exponential(0.8,0.25))
+e           <- new.experiment(kernelf=kernel.exponential(1.2,2.0))
 # positions where to evaluate the Gaussian process
 x           <- as.matrix(expand.grid(x = 0:20/4, y = 0:20/4))
 # positions where samples can be drawn
 x.sampling1 <- as.matrix(expand.grid(x = 0.0:5.0, y = 0.0:5.0))
 x.sampling2 <- as.matrix(expand.grid(x = 0.5:4.5, y = 0.5:4.5))
 
-#for (i in 1:800) {
-for (i in 1:200) {
+for (i in 1:800) {
+  print(sprintf("Sampling step... %d", i))
   if (i %% 2 == 0) {
     sample.with.gt(e, x.sampling1, new.gt.f(f))
   }
@@ -102,8 +102,6 @@ for (i in 1:200) {
   }
   png(filename=sprintf("plot_%03d.png", i),
       width = 1200, height = 800)
-  e$kernelf = kernel.exponential(1.0,0.25)
   plot(e, x, f=f, main = sprintf("%d samples", i))
-  e$kernelf = kernel.exponential(0.8,0.25)
   dev.off()
 }

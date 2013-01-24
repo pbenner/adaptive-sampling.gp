@@ -55,53 +55,69 @@ plot.gp.1d <- function(gp, s=NULL, ...)
   }
 }
 
-plot.gp.2d <- function(gp, counts=NULL, f=NULL, main="", plot.variance=TRUE, low=muted("green"), mid="white", high=muted("red"), ...)
+plot.gp.2d <- function(gp, counts=NULL, f=NULL, main="", plot.variance=TRUE,
+                       low=muted("green"), mid="white", high=muted("red"),
+                       midpoint=NULL, ...)
 {
+  # initialize all plot objects
+  p1 <- NULL
+  p2 <- NULL
+  p3 <- NULL
+  p4 <- NULL
+  # compute predictive expectation and variance
   result <- predictive(gp)
+  # a midpoint is computed from gp$range, but only if it is
+  # not not given as an argument to this function
+  if (is.null(midpoint) && !is.null(gp$range)) {
+    midpoint <- sum(gp$range)/2
+  }
 
+  # first, plot the expectation
   p1 <- ggplot(data = data.frame(x = gp$x[,1], y = gp$x[,2], z = result$mean),
                aes_string(x = "x", y = "y", z = "z")) +
         geom_tile(aes_string(fill="z"), limits=c(min(result$mean), max(result$mean))) +
         stat_contour() +
-        scale_fill_gradient2(limits=gp$range, low=low, mid=mid, high=high) +
+        scale_fill_gradient2(limits=gp$range, low=low, mid=mid, high=high, midpoint=midpoint) +
         ggtitle("Expected value")
 
+  # plot varience only if plot.variance is TRUE
   if (plot.variance) {
     p2 <- ggplot(data = data.frame(x = gp$x[,1], y = gp$x[,2], z = result$variance),
                  aes_string(x = "x", y = "y", z = "z")) +
                  geom_tile(aes_string(fill="z")) +
                  stat_contour() +
-                 scale_fill_gradient(limits=c(0, 0.1), low=mid, high=high) +
+                 scale_fill_gradient(low=mid, high=high) +
                  ggtitle("Variance")
   }
-  
+  # check whether a ground truth is available
   if (!is.null(f)) {
     p3 <- ggplot(data = data.frame(x = gp$x[,1], y = gp$x[,2], z = f(gp$x)),
                  aes_string(x = "x", y = "y", z = "z")) +
                  geom_tile(aes_string(fill="z")) +
                  stat_contour() +
-                 scale_fill_gradient2(limits=gp$range, low=low, mid=mid, high=high, midpoint=0.5) +
+                 scale_fill_gradient2(limits=gp$range, low=low, mid=mid, high=high, midpoint=midpoint) +
                  ggtitle("Ground truth")
-
+  }
+  # check if counts are available
+  if (!is.null(counts)) {
     p4 <- ggplot(data = data.frame(x = counts[,1], y = counts[,2]),
                  aes_string(x = "x", y = "y")) +
                  stat_bin2d() +
                  scale_fill_gradient(low=mid, high=high) +
                  ggtitle("Counts")
-    
+  }
+  # use different grids depending on what plots are available
+  if (!is.null(p2) && !is.null(p3) && !is.null(p4)) {
     grid.arrange(p1, p2, p3, p4, ncol=2, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
-    return (invisible(list(p1=p1, p2=p2, p3=p3, p4=p4)))
+  }
+  else if (!is.null(p2)) {
+    grid.arrange(p1, p2, ncol=2, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
   }
   else {
-    if (plot.variance) {
-      grid.arrange(p1, p2, ncol=2, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
-      return (invisible(list(p1=p1, p2=p2)))
-    }
-    else {
-      grid.arrange(p1, ncol=1, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
-      return (invisible(list(p1=p1)))
-    }
+    grid.arrange(p1, ncol=1, main=textGrob(main, vjust = 1, gp = gpar(fontface = "bold", cex = 1.5)))
   }
+  # return a list of all plot objects
+  return (invisible(list(p1=p1, p2=p2, p3=p3, p4=p4)))
 }
 
 #' Plot a Gaussian process

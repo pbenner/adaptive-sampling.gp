@@ -1,7 +1,7 @@
 
 # 1-dimensional sampling
 ################################################################################
-e  <- new.experiment(c(2.0,2.0))
+e  <- new.experiment(kernelf=kernel.exponential(0.8,0.25))
 x  <- 1:10/2
 gt <- new.gt(x,
              c(0.977895, 0.959606, 0.927331, 0.872769, 0.786948,
@@ -32,10 +32,12 @@ f <- function(z)
 }
 
 # generate an experiment
-e           <- new.experiment(c(1.0,1.0))
+e           <- new.experiment(kernelf=kernel.exponential(0.8,2.0))
 # positions where to evaluate the Gaussian process
 x           <- as.matrix(expand.grid(x = 0:20/4, y = 0:20/4))
 # positions where samples can be drawn
 x.sampling  <- as.matrix(expand.grid(x = 1:4, y = 1:4))
 
-sample.with.gt(e, x.sampling, new.gt.f(f))
+sample.with.gt(e, x.sampling, new.gt.f(f), N=20)
+
+plot(e, x, f=f)

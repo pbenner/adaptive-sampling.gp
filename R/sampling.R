@@ -95,12 +95,15 @@ utility.experiment <- function(experiment, x, ...)
 #' @param N number of samples
 #' @export
 
-sample.with.gt <- function(experiment, x, gt, N=1)
+sample.with.gt <- function(experiment, x, gt, N=1, verbose=FALSE)
 {
   if (is.vector(x)) {
     x <- as.matrix(x)
   }
   for (i in 1:N) {
+    if (verbose) {
+      print(sprintf("Sampling step... %d", i))
+    }
     # compute utility for every position
     ut <- utility(experiment, x)
     # select best position; if multiple global maxima exist then
