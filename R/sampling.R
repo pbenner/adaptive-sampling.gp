@@ -93,6 +93,7 @@ utility.experiment <- function(experiment, x, ...)
 #' @param x positions where to evaluate the experiment
 #' @param gt the ground truth
 #' @param N number of samples
+#' @param verbose print sampling step
 #' @export
 
 sample.with.gt <- function(experiment, x, gt, N=1, verbose=FALSE)

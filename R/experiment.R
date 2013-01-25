@@ -19,8 +19,7 @@ value2key <- function(value) toString(value)
 
 #' Generate a new experiment
 #' 
-#' @param alpha Dirichlet pseudocounts
-#' @param kernel.type partially applied kernel function
+#' @param kernelf kernel function
 #' @export
 
 new.experiment <- function(kernelf=kernel.exponential(1, 0.25))

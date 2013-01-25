@@ -40,7 +40,7 @@ library("Matrix")
 #' @param mu.prior prior mean
 #' @param kernelf kernel function
 #' @param range restrict the GP to a certain interval
-#' @param sigma covariance matrix (optional)
+#' @param link link (response) function
 #' @export
 
 new.gp <- function(x, mu.prior, kernelf, range=NULL, link=NULL)
