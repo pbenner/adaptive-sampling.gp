@@ -17,7 +17,7 @@ Depends:
     nnet,
     mvtnorm,
     Matrix,
-    ggplot2,
+    ggplot2 (>= 0.9.3),
     gridExtra,
     scales
 Date: 03-03-2012
