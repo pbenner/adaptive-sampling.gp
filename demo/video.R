@@ -85,7 +85,7 @@ f <- function(z)
 }
 
 # generate an experiment
-e           <- new.experiment(kernelf=kernel.exponential(1.2,2.0))
+e           <- new.experiment(kernelf=kernel.exponential(1.2,2.0), prior.mean=0.4)
 # positions where to evaluate the Gaussian process
 x           <- as.matrix(expand.grid(x = 0:20/4, y = 0:20/4))
 # positions where samples can be drawn

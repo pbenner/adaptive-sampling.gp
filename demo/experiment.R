@@ -13,7 +13,7 @@ plot(gp)
 
 # Experiment 2
 ################################################################################
-e <- new.experiment(kernelf=kernel.exponential(1.0,0.25))
+e <- new.experiment(kernelf=kernel.exponential(1.0,0.25), prior.mean=0.1)
 add.measurement(e, 1, c( 1, 4))
 add.measurement(e, 2, c( 1, 3))
 add.measurement(e, 3, c( 2, 6))

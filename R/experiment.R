@@ -22,10 +22,11 @@ value2key <- function(value) toString(value)
 #' @param kernelf kernel function
 #' @export
 
-new.experiment <- function(kernelf=kernel.exponential(1, 0.25))
+new.experiment <- function(kernelf=kernel.exponential(1, 0.25), prior.mean=0.5)
 {
-  experiment        <- list(data    = new.env(),# experimental data
-                            kernelf = kernelf)  # kernel function
+  experiment        <- list(data       = new.env(), # experimental data
+                            kernelf    = kernelf,   # kernel function
+                            prior.mean = prior.mean)
   class(experiment) <- "experiment"
 
   return (experiment)
@@ -90,7 +91,9 @@ posterior.experiment <- function(model, x, ...)
 {
   experiment <- model
   # construct the gaussian process with a link function
-  gp         <- new.gp(x, 0.0, experiment$kernelf, range=c(0,1), link=new.link())
+  link       <- new.link()
+  mu         <- link$link(experiment$prior.mean)
+  gp         <- new.gp(x, mu, experiment$kernelf, range=c(0,1), link=link)
   xp         <- NULL
   yp         <- NULL
 

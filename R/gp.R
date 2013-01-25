@@ -137,9 +137,9 @@ posterior.gp <- function(model, xp, yp, noise=NULL, ...)
   if (!is.null(gp$link)) {
     # if so, then call a specialized method
     # approximate the posterior of the gaussian process
-    result   <- approximate.posterior(xp, yp, k0, gp$link)
+    result   <- approximate.posterior(xp, yp, gp$mu.prior, k0, gp$link)
     # which is a gaussian with mean mu and covariance sigma
-    gp$mu    <- k2 %*% result$d
+    gp$mu    <- gp$mu.prior + k2 %*% result$d
     v        <- solve(result$L) %*% (sqrt(result$W) %*% k1)
     gp$sigma <- k3 - t(v) %*% v
   }
@@ -195,7 +195,7 @@ approximate.posterior.derivative <- function(f, yp, K, link, N)
   return (list(d = d, W = W))
 }
 
-approximate.posterior.step <- function(f, yp, K, link, N)
+approximate.posterior.step <- function(f, yp, mu.prior, K, link, N)
 {
   derivative <- approximate.posterior.derivative(f, yp, K, link, N)
   # d: d/dx log p(y|f)
@@ -204,14 +204,14 @@ approximate.posterior.step <- function(f, yp, K, link, N)
   W <- derivative$W
   B <- diag(N) + sqrt(W) %*% K %*% sqrt(W)
   L <- t(chol(B))
-  b <- W %*% f + d
+  b <- W %*% (f - mu.prior) + d
   a <- b - sqrt(W) %*% solve(t(L)) %*% (solve(L) %*% (sqrt(W) %*% K %*% b))
-  f <- K %*% a
+  f <- mu.prior + K %*% a
 
   return (f)
 }
 
-approximate.posterior <- function(xp, yp, K, link, epsilon=0.00001)
+approximate.posterior <- function(xp, yp, mu.prior, K, link, epsilon=0.00001)
 {
   # number of positions where measurements are available
   N <- dim(xp)[[1]]
@@ -220,7 +220,7 @@ approximate.posterior <- function(xp, yp, K, link, epsilon=0.00001)
   f.old <- as.matrix(rep(0, N))
   repeat {
     # run Newton steps until convergence
-    f <- approximate.posterior.step(f, yp, K, link, N)
+    f <- approximate.posterior.step(f, yp, mu.prior, K, link, N)
     if (norm(f - f.old) < epsilon) {
       break
     }
