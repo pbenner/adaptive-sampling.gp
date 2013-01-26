@@ -18,41 +18,21 @@ library("ggplot2")
 library("gridExtra")
 library("scales")
 
-plot.gp.1d <- function(gp, s=NULL, xlab=NULL, ylab=NULL, ...)
+plot.gp.1d <- function(gp, main="", xlabel=NULL, ylabel=NULL, alpha=0.3, ...)
 {
   result <- predictive(gp)
-  
-  col <- rgb(10/255, 40/255, 10/255, alpha=0.5)
 
-  if (is.null(gp$range)) {
-    z1  <- result$mean + 2*sqrt(result$variance)
-    z2  <- result$mean - 2*sqrt(result$variance)
+  p <- ggplot(data.frame(x = gp$x, mean = result$mean, confidence = 2*sqrt(result$variance)), aes(x=x)) +
+              geom_ribbon(aes(ymin=mean-confidence, ymax=mean+confidence), alpha=alpha) +
+              geom_line(aes(y=mean)) +
+              ggtitle(main) +
+              xlab(xlabel) +
+              ylab(ylabel)
+
+  if (!is.null(gp$range)) {
+    p + ylim(gp$range)
   }
-  else {
-    z1  <- bound(result$mean + 2*sqrt(result$variance))
-    z2  <- bound(result$mean - 2*sqrt(result$variance))
-  }
-
-  # plot returns nothing, so don't bother to catch the
-  # return value
-  plot(cbind(gp$x, gp$x, gp$x), cbind(result$mean, z1, z2),
-       'n', xlab=xlab, ylab=ylab, ylim=gp$range)
-  
-  polygon(c(gp$x, rev(gp$x)), c(z1, rev(z2)),
-     col = col, border = NA)
-
-  lines(gp$x, result$mean, 'l', lwd=3)
-
-  if (!is.null(s)) {
-    # if this is a scalar, then it specifies the number of samples
-    if (!is.matrix(s)) {
-      s <- samples(gp, s)
-    }
-    # otherwise it contains already samples
-    for (i in 1:dim(s)[1]) {
-      lines(gp$x, bound(s[i,]), 'l', lwd=0.5)
-    }
-  }
+  return (p)
 }
 
 plot.gp.2d <- function(gp, counts=NULL, f=NULL, main="", plot.variance=TRUE,

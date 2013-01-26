@@ -8,5 +8,3 @@ ep <- c(0.01, 0.01, 0.01)
 gp <- posterior(gp, xp, yp, ep)
 
 plot(gp)
-
-plot(gp, samples(gp, 100))
