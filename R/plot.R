@@ -18,11 +18,11 @@ library("ggplot2")
 library("gridExtra")
 library("scales")
 
-plot.gp.1d <- function(gp, s=NULL, ...)
+plot.gp.1d <- function(gp, s=NULL, xlab=NULL, ylab=NULL, ...)
 {
   result <- predictive(gp)
   
-  col <- rgb(8/255, 81/255, 156/255, alpha=0.625)
+  col <- rgb(10/255, 40/255, 10/255, alpha=0.5)
 
   if (is.null(gp$range)) {
     z1  <- result$mean + 2*sqrt(result$variance)
@@ -36,7 +36,7 @@ plot.gp.1d <- function(gp, s=NULL, ...)
   # plot returns nothing, so don't bother to catch the
   # return value
   plot(cbind(gp$x, gp$x, gp$x), cbind(result$mean, z1, z2),
-       'n', xlab="x", ylab="p", ylim=gp$range)
+       'n', xlab=xlab, ylab=ylab, ylim=gp$range)
   
   polygon(c(gp$x, rev(gp$x)), c(z1, rev(z2)),
      col = col, border = NA)
