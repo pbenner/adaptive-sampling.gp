@@ -10,6 +10,7 @@ gp2$link  <- NULL
 gp2$range <- NULL
 p1 <- plot(gp1, main="Probability space", xlabel="x", ylabel="p")
 p2 <- plot(gp2, main="Physical space", xlabel="x")
-pdf(file="illustration.pdf")
+#pdf(file="illustration.pdf")
+png(filename="illustration.png")
 grid.arrange(p1, p2, ncol=1)
 dev.off()
