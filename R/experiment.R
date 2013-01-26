@@ -18,11 +18,13 @@ key2value <- function(key) drop(sapply(strsplit(key, ","), FUN=as.numeric))
 value2key <- function(value) toString(value)
 
 #' Generate a new experiment
-#' 
-#' @param kernelf kernel function
+#'
+#' @param prior.mean prior mean of the Gaussian process
+#' @param kernelf kernel function (prior covariance matrix)
 #' @export
 
-new.experiment <- function(kernelf=kernel.exponential(1, 0.25), prior.mean=0.5)
+new.experiment <- function(prior.mean=0.5,
+                           kernelf=kernel.exponential(1, 0.25))
 {
   experiment        <- list(data       = new.env(), # experimental data
                             kernelf    = kernelf,   # kernel function

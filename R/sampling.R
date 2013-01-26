@@ -117,14 +117,43 @@ sample.with.gt <- function(experiment, x, gt, N=1, verbose=FALSE)
   }
 }
 
-#' Generate a new ground truth from a vector of binomial parameters
+#' Generate a new ground truth from a vector or function of binomial
+#' parameters
 #' 
-#' @param x positions
-#' @param y values of the ground truth
+#' @param f function or vector defining the binomial parameters
+#' @param ... arguments to be passed to methods
 #' @export
 
-new.gt <- function(x, y)
+new.gt <- function(f, ...)
 {
+  UseMethod("new.gt")
+}
+
+#' Generate a new ground truth from a vector of binomial parameters
+#' 
+#' @param f positions
+#' @param y values of the ground truth
+#' @param ... unused
+#' @method new.gt numeric
+#' @S3method new.gt numeric
+
+new.gt.numeric <- function(f, y, ...)
+{
+  new.gt.matrix(as.matrix(f), as.matrix(y), ...)
+}
+
+#' Generate a new ground truth from a matrix of binomial parameters
+#' 
+#' @param f positions
+#' @param y values of the ground truth
+#' @param ... unused
+#' @method new.gt matrix
+#' @S3method new.gt matrix
+
+new.gt.matrix <- function(f, y, ...)
+{
+  x <- f
+  
   gt <- function(xt) {
     if (runif(1, 0, 1) <= y[x == xt]) {
       return (1)
@@ -139,9 +168,11 @@ new.gt <- function(x, y)
 #' Generate a new ground truth from a function
 #' 
 #' @param f function that specifies the ground truth
-#' @export
+#' @param ... unused
+#' @method new.gt function
+#' @S3method new.gt function
 
-new.gt.f <- function(f)
+new.gt.function <- function(f, ...)
 {
   gt <- function(xt) {
     if (runif(1, 0, 1) <= f(xt)) {

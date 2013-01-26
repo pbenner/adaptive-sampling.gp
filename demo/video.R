@@ -49,7 +49,7 @@ x           <- as.matrix(expand.grid(x = 0:20/4, y = 0:20/4))
 x.sampling  <- as.matrix(expand.grid(x = 1:9/2, y = 1:9/2))
 
 for (i in 1:500) {
-  sample.with.gt(e, x.sampling, new.gt.f(f))
+  sample.with.gt(e, x.sampling, new.gt(f))
   png(filename=sprintf("plot_%03d.png", i),
       width = 1200, height = 800)
   plot(e, x, f=f, main = sprintf("%d samples", i))
@@ -95,10 +95,10 @@ x.sampling2 <- as.matrix(expand.grid(x = 0.5:4.5, y = 0.5:4.5))
 for (i in 1:800) {
   print(sprintf("Sampling step... %d", i))
   if (i %% 2 == 0) {
-    sample.with.gt(e, x.sampling1, new.gt.f(f))
+    sample.with.gt(e, x.sampling1, new.gt(f))
   }
   else {
-    sample.with.gt(e, x.sampling2, new.gt.f(f))
+    sample.with.gt(e, x.sampling2, new.gt(f))
   }
   png(filename=sprintf("plot_%03d.png", i),
       width = 1200, height = 800)
