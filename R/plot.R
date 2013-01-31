@@ -48,8 +48,13 @@ plot.gp.2d <- function(gp, counts=NULL, f=NULL, main="", plot.variance=TRUE,
   result <- predictive(gp)
   # a midpoint is computed from gp$range, but only if it is
   # not not given as an argument to this function
-  if (is.null(midpoint) && !is.null(gp$range)) {
-    midpoint <- sum(gp$range)/2
+  if (is.null(midpoint)) {
+    if (!is.null(gp$range)) {
+      midpoint <- sum(gp$range)/2
+    }
+    else {
+      midpoint <- (min(result$mean) + max(result$mean))/2
+    }
   }
 
   # first, plot the expectation

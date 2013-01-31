@@ -1,9 +1,7 @@
 /* Copyright (C) 2013 Philipp Benner
  *
- * This program is free software; you can redistribute it and/or
- * modify
- * it under the terms of the GNU General Public License as published
- * by
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * any later version.
  *
@@ -23,12 +21,14 @@
 
 #include <math.h>
 
+// naive implementation of the kernel function
+////////////////////////////////////////////////////////////////////////////////
+
 SEXP exponential_kernel_1d(SEXP x, SEXP y, SEXP l, SEXP var)
 {
         R_len_t i, j;
         R_len_t nx = length(x);
         R_len_t ny = length(y);
-        double tmp;
         double *rx   = REAL(x);
         double *ry   = REAL(y);
         double *rl   = REAL(l);
@@ -74,7 +74,6 @@ SEXP exponential_kernel_2d(SEXP x, SEXP y, SEXP l, SEXP var)
         R_len_t i, j;
         R_len_t nx;
         R_len_t ny;
-        double tmp;
         double *rx   = REAL(x);
         double *ry   = REAL(y);
         double *rl   = REAL(l);
@@ -112,6 +111,169 @@ SEXP exponential_kernel_2d(SEXP x, SEXP y, SEXP l, SEXP var)
                         rans[i + nx*j] =
                                 (*rvar)*exp(-1.0/(2.0*(*rl)*(*rl))*norm);
                 }
+        }
+        UNPROTECT(1);
+
+        return(ans);
+}
+
+// kernel functions as sparse symmetric band matrices
+////////////////////////////////////////////////////////////////////////////////
+
+SEXP exponential_kernel_1d_sparse(SEXP x, SEXP y, SEXP l, SEXP var, SEXP n, SEXP m)
+{
+        R_len_t p, q;
+        R_len_t nx   = length(x);
+        R_len_t ny   = length(y);
+        double *rx   = REAL(x);
+        double *ry   = REAL(y);
+        double *rl   = REAL(l);
+        double *rvar = REAL(var);
+        double *rn   = REAL(n);
+        double *rm   = REAL(m);
+        double *rans, norm;
+        double *rtmp;
+        SEXP ans, dim, tmp;
+
+        /* check input */
+        dim = getAttrib(x, R_DimSymbol);
+        if(length(dim) != 2 && INTEGER(dim)[1] != 1) {
+                error("x has invalid dimension");
+        }
+
+        dim = getAttrib(y, R_DimSymbol);
+        if(length(dim) != 2 && INTEGER(dim)[1] != 1) {
+                error("y has invalid dimension");
+        }
+
+        if (length(l) != 1) {
+                error("l is not a scalar");
+        }
+        if (length(var) != 1) {
+                error("var is not a scalar");
+        }
+        if (length(n) != 1) {
+                error("n is not a scalar");
+        }
+        if (length(m) != 1) {
+                error("m is not a scalar");
+        }
+
+        /* define a list that contains the diagonals */
+        PROTECT(ans = allocVector(VECSXP, *rn + *rm + 1));
+        /* loop over sub-diagonals */
+        for(p = *rn; p > 0; p--) {
+                /* define a vector that contains a diagonal */
+                PROTECT(tmp = allocVector(REALSXP, nx-p));
+                rtmp = REAL(tmp);
+                /* loop through the diagonal */
+                for(q = 0; q < nx-p; q++) {
+                        /* compute norm */
+                        norm = (rx[p+q] - ry[q])*(rx[p+q] - ry[q]);
+                        /* compute exponential kernel function */
+                        rtmp[q] = (*rvar)*exp(-1.0/(2.0*(*rl)*(*rl))*norm);
+                }
+                /* insert the diagonal into the list */
+                SET_VECTOR_ELT(ans, *rn - p, tmp);
+                UNPROTECT(1);
+        }
+        /* loop over main diagonal and super-diagonals */
+        for(q = 0; q <= *rm; q++) {
+                /* define a vector that contains a diagonal */
+                PROTECT(tmp = allocVector(REALSXP, ny-q));
+                rtmp = REAL(tmp);
+                /* loop through the diagonal */
+                for(p = 0; p < ny-q; p++) {
+                        /* compute norm */
+                        norm = (rx[p] - ry[p+q])*(rx[p] - ry[p+q]);
+                        /* compute exponential kernel function */
+                        rtmp[p] = (*rvar)*exp(-1.0/(2.0*(*rl)*(*rl))*norm);
+                }
+                /* insert the diagonal into the list */
+                SET_VECTOR_ELT(ans, *rn + q, tmp);
+                UNPROTECT(1);
+        }
+        UNPROTECT(1);
+
+        return(ans);
+}
+
+SEXP exponential_kernel_2d_sparse(SEXP x, SEXP y, SEXP l, SEXP var, SEXP n, SEXP m)
+{
+        R_len_t p, q;
+        R_len_t nx;
+        R_len_t ny;
+        double *rx   = REAL(x);
+        double *ry   = REAL(y);
+        double *rl   = REAL(l);
+        double *rvar = REAL(var);
+        double *rn   = REAL(n);
+        double *rm   = REAL(m);
+        double *rans, norm;
+        double *rtmp;
+        SEXP ans, dim, tmp;
+
+        /* check input */
+        dim = getAttrib(x, R_DimSymbol);
+        if(length(dim) != 2 && INTEGER(dim)[1] != 2) {
+                error("x has invalid dimension");
+        }
+        nx = INTEGER(dim)[0];
+
+        dim = getAttrib(y, R_DimSymbol);
+        if(length(dim) != 2 && INTEGER(dim)[1] != 2) {
+                error("y has invalid dimension");
+        }
+        ny = INTEGER(dim)[0];
+
+        if (length(l) != 1) {
+                error("l is not a scalar");
+        }
+        if (length(var) != 1) {
+                error("var is not a scalar");
+        }
+        if (length(n) != 1) {
+                error("n is not a scalar");
+        }
+        if (length(m) != 1) {
+                error("m is not a scalar");
+        }
+
+        /* define a list that contains the diagonals */
+        PROTECT(ans = allocVector(VECSXP, *rn + *rm + 1));
+        /* loop over sub-diagonals */
+        for(p = *rn; p > 0; p--) {
+                /* define a vector that contains a diagonal */
+                PROTECT(tmp = allocVector(REALSXP, nx-p));
+                rtmp = REAL(tmp);
+                /* loop through the diagonal */
+                for(q = 0; q < nx-p; q++) {
+                        /* compute norm */
+                        norm = (rx[p+q + nx*0] - ry[q + ny*0])*(rx[p+q + nx*0] - ry[q + ny*0])
+                             + (rx[p+q + nx*1] - ry[q + ny*1])*(rx[p+q + nx*1] - ry[q + ny*1]);
+                        /* compute exponential kernel function */
+                        rtmp[q] = (*rvar)*exp(-1.0/(2.0*(*rl)*(*rl))*norm);
+                }
+                /* insert the diagonal into the list */
+                SET_VECTOR_ELT(ans, *rn - p, tmp);
+                UNPROTECT(1);
+        }
+        /* loop over main diagonal and super-diagonals */
+        for(q = 0; q <= *rm; q++) {
+                /* define a vector that contains a diagonal */
+                PROTECT(tmp = allocVector(REALSXP, ny-q));
+                rtmp = REAL(tmp);
+                /* loop through the diagonal */
+                for(p = 0; p < ny-q; p++) {
+                        /* compute norm */
+                        norm = (rx[p + nx*0] - ry[p+q + ny*0])*(rx[p + nx*0] - ry[p+q + ny*0])
+                             + (rx[p + nx*1] - ry[p+q + ny*1])*(rx[p + nx*1] - ry[p+q + ny*1]);
+                        /* compute exponential kernel function */
+                        rtmp[p] = (*rvar)*exp(-1.0/(2.0*(*rl)*(*rl))*norm);
+                }
+                /* insert the diagonal into the list */
+                SET_VECTOR_ELT(ans, *rn + q, tmp);
+                UNPROTECT(1);
         }
         UNPROTECT(1);
 

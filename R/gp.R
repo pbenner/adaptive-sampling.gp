@@ -26,7 +26,7 @@
 #' @import mvtnorm
 #' @import ggplot2
 #' @import scales
-#' @importFrom Matrix nearPD
+#' @import Matrix
 #' @importFrom gridExtra grid.arrange
 #' @importFrom nnet which.is.max
 #' @useDynLib adaptive.sampling.gp
@@ -113,7 +113,7 @@ posterior.gp <- function(model, xp, yp, noise=NULL, ...)
   # xp and yp can be NULL
   if (is.null(xp) || is.null(yp)) {
     gp$mu    <- as.matrix(rep(gp$mu.prior, dim(gp$x)[1]))
-    gp$sigma <- gp$kernelf(gp$x, gp$x)
+    gp$sigma <- gp$kernelf(gp$x)
     gp$sigma <- as.matrix(nearPD(gp$sigma)$mat)
     return (gp)
   }
@@ -128,10 +128,10 @@ posterior.gp <- function(model, xp, yp, noise=NULL, ...)
     noise <- as.matrix(noise)
   }
   # compute posterior...
-  k0 <- gp$kernelf(xp, xp)     # K(X , X )
-  k1 <- gp$kernelf(xp, gp$x)   # K(X , X*)
-  k2 <- t(k1)                  # K(X*, X )
-  k3 <- gp$kernelf(gp$x, gp$x) # K(X*, X*)
+  k0 <- gp$kernelf(xp)       # K(X , X )
+  k1 <- gp$kernelf(xp, gp$x) # K(X , X*)
+  k2 <- t(k1)                # K(X*, X )
+  k3 <- gp$kernelf(gp$x)     # K(X*, X*)
 
   # check if a link is available
   if (!is.null(gp$link)) {

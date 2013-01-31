@@ -17,71 +17,139 @@
 kernel.exponential.c.1d <- function(x, y, l, var)
 {
   storage.mode(x)   <- "double"
-  storage.mode(y)   <- "double"
   storage.mode(l)   <- "double"
   storage.mode(var) <- "double"
+  if (!is.null(y)) {
+    storage.mode(y)   <- "double"
+  }
 
   if (!is.matrix(x)) {
     x <- as.matrix(x)
   }
-  if (!is.matrix(y)) {
+  if (!is.null(y) && !is.matrix(y)) {
     y <- as.matrix(y)
   }
 
-  .Call("exponential_kernel_1d", x, y, l, var, PACKAGE="adaptive.sampling.gp")
+  if (is.null(y)) {
+    .Call("exponential_kernel_1d", x, x, l, var, PACKAGE="adaptive.sampling.gp")
+  }
+  else {
+    .Call("exponential_kernel_1d", x, y, l, var, PACKAGE="adaptive.sampling.gp")
+  }
 }
 
 kernel.exponential.c.2d <- function(x, y, l, var)
 {
   storage.mode(x)   <- "double"
-  storage.mode(y)   <- "double"
   storage.mode(l)   <- "double"
   storage.mode(var) <- "double"
+  if (!is.null(y)) {
+    storage.mode(y)   <- "double"
+  }
 
   if (!is.matrix(x)) {
     x <- as.matrix(x)
   }
-  if (!is.matrix(y)) {
+  if (!is.null(y) && !is.matrix(y)) {
     y <- as.matrix(y)
   }
 
-  .Call("exponential_kernel_2d", x, y, l, var, PACKAGE="adaptive.sampling.gp")
+  if (is.null(y)) {
+    .Call("exponential_kernel_2d", x, x, l, var, PACKAGE="adaptive.sampling.gp")
+  }
+  else {
+    .Call("exponential_kernel_2d", x, y, l, var, PACKAGE="adaptive.sampling.gp")
+  }
 }
 
-kernel.exponential <- function(l, var)
+kernel.exponential.c.1d.sparse <- function(x, y, l, var, n)
 {
-  f <- function(x, y) {
-    n <- dim(x)[1]
-    m <- dim(y)[1]
-    result      <- matrix(0.0, n*m)
-    dim(result) <- c(n, m)
-    for (i in 1:n) {
-      for (j in 1:m) {
-        result[i,j] <- var*exp(-1.0/(2.0*l^2)*(x[i]-y[j])^2)
-      }
-    }
-    return (result)
+  storage.mode(x)   <- "double"
+  storage.mode(l)   <- "double"
+  storage.mode(var) <- "double"
+  storage.mode(n)   <- "double"
+  if (!is.null(y)) {
+    storage.mode(y)   <- "double"
   }
-  return (f)
+
+  if (!is.matrix(x)) {
+    x <- as.matrix(x)
+  }
+  if (!is.null(y) && !is.matrix(y)) {
+    y <- as.matrix(y)
+  }
+
+  if (is.null(y)) {
+    nx <- 0
+    ny <- min(dim(x)[1]-1, n)
+    result <- .Call("exponential_kernel_1d_sparse", x, x, l, var, nx, ny, PACKAGE="adaptive.sampling.gp")
+    bandSparse(dim(x)[1], dim(x)[1], 0:ny, result, symmetric=TRUE)
+  }
+  else {
+    nx <- min(dim(x)[1]-1, n)
+    ny <- min(dim(y)[1]-1, n)
+    result <- .Call("exponential_kernel_1d_sparse", x, y, l, var, nx, ny, PACKAGE="adaptive.sampling.gp")
+    bandSparse(dim(x)[1], dim(y)[1], -nx:ny, result, symmetric=FALSE)
+  }
+}
+
+kernel.exponential.c.2d.sparse <- function(x, y, l, var, n)
+{
+  storage.mode(x)   <- "double"
+  storage.mode(l)   <- "double"
+  storage.mode(var) <- "double"
+  storage.mode(n)   <- "double"
+  if (!is.null(y)) {
+    storage.mode(y)   <- "double"
+  }
+
+  if (!is.matrix(x)) {
+    x <- as.matrix(x)
+  }
+  if (!is.null(y) && !is.matrix(y)) {
+    y <- as.matrix(y)
+  }
+
+  if (is.null(y)) {
+    nx <- 0
+    ny <- min(dim(x)[1]-1, n)
+    result <- .Call("exponential_kernel_2d_sparse", x, x, l, var, nx, ny, PACKAGE="adaptive.sampling.gp")
+    bandSparse(dim(x)[1], dim(x)[1], 0:ny, result, symmetric=TRUE)
+  }
+  else {
+    nx <- min(dim(x)[1]-1, n)
+    ny <- min(dim(y)[1]-1, n)
+    result <- .Call("exponential_kernel_2d_sparse", x, y, l, var, nx, ny, PACKAGE="adaptive.sampling.gp")
+    bandSparse(dim(x)[1], dim(y)[1], -nx:ny, result, symmetric=FALSE)
+  }
 }
 
 #' Generate a squared exponential kernel
 #' 
 #' @param l length scale
 #' @param var noise variance
+#' @param n approximate the kernel with a symmetric sparse band matrix of n diagonals
 #' @export
 
-kernel.exponential <- function(l, var)
+kernel.exponential <- function(l, var, n=NULL)
 {
   f <- function(x, y=NULL) {
-    if (is.null(y)) {
-      y <- x
-    }
+    # select an appropriate kernel function
     if (is.null(dim(x)) || dim(x)[2] == 1) {
-      kernel.exponential.c.1d(x, y, l, var)
+      if (is.null(n)) {
+        kernel.exponential.c.1d(x, y, l, var)
+      }
+      else {
+        kernel.exponential.c.1d.sparse(x, y, l, var, n)
+      }
     }
     else if (dim(x)[2] == 2) {
-      kernel.exponential.c.2d(x, y, l, var)
+      if (is.null(n)) {
+        kernel.exponential.c.2d(x, y, l, var)
+      }
+      else {
+        kernel.exponential.c.2d.sparse(x, y, l, var, n)
+      }
     }
     else {
       stop("x has wrong dimension")
