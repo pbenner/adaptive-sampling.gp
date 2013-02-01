@@ -164,10 +164,10 @@ SEXP exponential_kernel_1d_sparse(SEXP x, SEXP y, SEXP l, SEXP var, SEXP n, SEXP
         /* loop over sub-diagonals */
         for(p = *rn; p > 0; p--) {
                 /* define a vector that contains a diagonal */
-                PROTECT(tmp = allocVector(REALSXP, nx-p));
+                PROTECT(tmp = allocVector(REALSXP, fmin(nx-p, ny)));
                 rtmp = REAL(tmp);
                 /* loop through the diagonal */
-                for(q = 0; q < nx-p; q++) {
+                for(q = 0; q < fmin(nx-p, ny); q++) {
                         /* compute norm */
                         norm = (rx[p+q] - ry[q])*(rx[p+q] - ry[q]);
                         /* compute exponential kernel function */
@@ -180,10 +180,10 @@ SEXP exponential_kernel_1d_sparse(SEXP x, SEXP y, SEXP l, SEXP var, SEXP n, SEXP
         /* loop over main diagonal and super-diagonals */
         for(q = 0; q <= *rm; q++) {
                 /* define a vector that contains a diagonal */
-                PROTECT(tmp = allocVector(REALSXP, ny-q));
+                PROTECT(tmp = allocVector(REALSXP, fmin(nx, ny-q)));
                 rtmp = REAL(tmp);
                 /* loop through the diagonal */
-                for(p = 0; p < ny-q; p++) {
+                for(p = 0; p < fmin(nx, ny-q); p++) {
                         /* compute norm */
                         norm = (rx[p] - ry[p+q])*(rx[p] - ry[p+q]);
                         /* compute exponential kernel function */
@@ -244,10 +244,10 @@ SEXP exponential_kernel_2d_sparse(SEXP x, SEXP y, SEXP l, SEXP var, SEXP n, SEXP
         /* loop over sub-diagonals */
         for(p = *rn; p > 0; p--) {
                 /* define a vector that contains a diagonal */
-                PROTECT(tmp = allocVector(REALSXP, nx-p));
+                PROTECT(tmp = allocVector(REALSXP, fmin(nx-p, ny)));
                 rtmp = REAL(tmp);
                 /* loop through the diagonal */
-                for(q = 0; q < nx-p; q++) {
+                for(q = 0; q < fmin(nx-p, ny); q++) {
                         /* compute norm */
                         norm = (rx[p+q + nx*0] - ry[q + ny*0])*(rx[p+q + nx*0] - ry[q + ny*0])
                              + (rx[p+q + nx*1] - ry[q + ny*1])*(rx[p+q + nx*1] - ry[q + ny*1]);
@@ -261,10 +261,10 @@ SEXP exponential_kernel_2d_sparse(SEXP x, SEXP y, SEXP l, SEXP var, SEXP n, SEXP
         /* loop over main diagonal and super-diagonals */
         for(q = 0; q <= *rm; q++) {
                 /* define a vector that contains a diagonal */
-                PROTECT(tmp = allocVector(REALSXP, ny-q));
+                PROTECT(tmp = allocVector(REALSXP, fmin(nx, ny-q)));
                 rtmp = REAL(tmp);
                 /* loop through the diagonal */
-                for(p = 0; p < ny-q; p++) {
+                for(p = 0; p < fmin(nx, ny-q); p++) {
                         /* compute norm */
                         norm = (rx[p + nx*0] - ry[p+q + ny*0])*(rx[p + nx*0] - ry[p+q + ny*0])
                              + (rx[p + nx*1] - ry[p+q + ny*1])*(rx[p + nx*1] - ry[p+q + ny*1]);
