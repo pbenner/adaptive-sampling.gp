@@ -103,18 +103,21 @@ posterior <- function(model, ...)
 #' @param xp positions of measurements
 #' @param yp measured values
 #' @param noise uncertainty of measurements (optional)
+#' @param enforce.pd the posterior covariance matrix is forced to be positive definite
 #' @param ... unused
 #' @method posterior gp
 #' @S3method posterior gp
 
-posterior.gp <- function(model, xp, yp, noise=NULL, ...)
+posterior.gp <- function(model, xp, yp, noise=NULL, enforce.pd=FALSE,...)
 {
   gp <- model
-  # xp and yp can be NULL
+  # xp and yp can be NULL, then simplify compute the prior
   if (is.null(xp) || is.null(yp)) {
     gp$mu    <- as.matrix(rep(gp$mu.prior, dim(gp$x)[1]))
     gp$sigma <- gp$kernelf(gp$x)
-    gp$sigma <- as.matrix(nearPD(gp$sigma)$mat)
+    if (enforce.pd) {
+      gp$sigma <- as.matrix(nearPD(gp$sigma)$mat)
+    }
     return (gp)
   }
   # check arguments
@@ -167,9 +170,10 @@ posterior.gp <- function(model, xp, yp, noise=NULL, ...)
   # the resulting matrix is usually not positive definite due to
   # numerical errors; use nearPD to compute the nearest positive
   # definite matrix
-  gp$sigma <- as.matrix(nearPD(gp$sigma)$mat)
-
-  return (gp)
+  if (enforce.pd) {
+    gp$sigma <- as.matrix(nearPD(gp$sigma)$mat)
+  }
+  gp
 }
 
 approximate.posterior.derivative <- function(f, yp, K, link, N)
