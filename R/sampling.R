@@ -70,15 +70,15 @@ utility.experiment <- function(experiment, x, ...)
   }
   
   L   <- dim(x)[1] # number of possible stimuli
-  gp0 <- posterior(experiment, x)
+  gp0 <- posterior(experiment, x, enforce.pd=TRUE)
   ut  <- as.matrix(rep(0.0, L))
   p   <- predictive(gp0)$mean
   
   for (i in 1:L) {
     add.measurement(experiment, x[i,], c( 1, 0))
-    gp1 <- posterior(experiment, x)
+    gp1 <- posterior(experiment, x, enforce.pd=TRUE)
     add.measurement(experiment, x[i,], c(-1, 1))
-    gp2 <- posterior(experiment, x)
+    gp2 <- posterior(experiment, x, enforce.pd=TRUE)
     add.measurement(experiment, x[i,], c( 0,-1))
 
     ut[i] <- ut[i] +    p[i] *kl.divergence(gp0, gp1)
