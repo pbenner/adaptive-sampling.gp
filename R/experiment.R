@@ -21,13 +21,16 @@ value2key <- function(value) toString(value)
 #'
 #' @param prior.mean prior mean of the Gaussian process
 #' @param kernelf kernel function (prior covariance matrix)
+#' @param type type of the experiment (e.g. bernoulli or gaussian)
 #' @export
 
 new.experiment <- function(prior.mean=0.5,
-                           kernelf=kernel.exponential(1, 0.25))
+                           kernelf=kernel.exponential(1, 0.25),
+                           type="bernoulli")
 {
   experiment        <- list(data       = new.env(), # experimental data
                             kernelf    = kernelf,   # kernel function
+                            type       = type,      # type of the experiment
                             prior.mean = prior.mean)
   class(experiment) <- "experiment"
 
@@ -92,10 +95,15 @@ get.counts <- function(experiment)
 posterior.experiment <- function(model, x, ...)
 {
   experiment <- model
-  # construct the gaussian process with a link function
-  link       <- new.link()
-  mu         <- link$link(experiment$prior.mean)
-  gp         <- new.gp(x, mu, experiment$kernelf, range=c(0,1), link=link)
+  if (experiment$type == "bernoulli") {
+    # construct the gaussian process with a link function
+    link       <- new.link()
+    mu         <- link$link(experiment$prior.mean)
+    gp         <- new.gp(x, mu, experiment$kernelf, range=c(0,1), link=link)
+  } else if (experiment$type == "gaussian") {
+    # do not use a link function for gaussian experiments
+    gp         <- new.gp(x, mu, experiment$kernelf)
+  }
   xp         <- NULL
   yp         <- NULL
 
