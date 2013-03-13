@@ -102,7 +102,7 @@ posterior.experiment <- function(model, x, ...)
     gp         <- new.gp(x, mu, experiment$kernelf, range=c(0,1), link=link)
   } else if (experiment$type == "gaussian") {
     # do not use a link function for gaussian experiments
-    gp         <- new.gp(x, mu, experiment$kernelf)
+    gp         <- new.gp(x, experiment$prior.mean, experiment$kernelf)
   }
   xp         <- NULL
   yp         <- NULL
