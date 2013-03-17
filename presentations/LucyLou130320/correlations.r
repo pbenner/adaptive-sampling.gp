@@ -21,20 +21,35 @@ sorted = sort(c1, decreasing=T)
 largestNpercent = function(n)
 	sorted[sorted>=quantile(c1, na.rm=T, probs=(100-n)/100)]
 
-plotLargestNpercent <- function(n)
+plotLargestNpercent <- function(n, show.colorbar=TRUE)
 {
 	coeffs = largestNpercent(n)
-	plot(locations, xaxt="n", yaxt="n", xlab="", ylab="", main=sprintf("Largest %i%%\t(N=%i)", n, length(coeffs)))
+	plot(
+		locations, 
+		xaxt="n", yaxt="n", 
+		xlab="", ylab="", 
+		xlim=c(1, 9 + ifelse(show.colorbar, 0, 2)),
+		main=sprintf("Largest %i%%\t(N=%i)", n, length(coeffs)))
 	lapply(
 		rev(coeffs), 
 		function(x) {
 			mx = which(c1==x, arr.ind=T); 
 			plotCorr(mx[1], mx[2], col=cv[round(256*x)], lwd=2*abs(x))})
-
+	if(show.colorbar)
+	{
+		for(k in 1:256)
+		{
+			ybottom = 7*(k-1)/256 + 1
+			ytop = ybottom+7/256
+			cat(ybottom, ytop, "\n")
+			rect(9.25, ybottom, 11, ytop, col=cv[k], border=NA)
+		}
+		axis(4, at=seq(1, 8, length=5), labels=seq(0, 1, length=5))
+	}
 }
 
-pdf("correlations%d.pdf", onefile=F)
-op = par(mar=c(0, 0, 4, 0)+0.1)
+pdf("correlations%d.pdf", onefile=F, height=7, width=7+2/9)
+op = par(mar=c(0, 0, 4, 2)+0.1)
 plotLargestNpercent(2)
 plotLargestNpercent(5)
 plotLargestNpercent(10)
