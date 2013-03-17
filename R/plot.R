@@ -138,6 +138,26 @@ plot.gp <- function(x, y=NULL, ...)
 
 plot.experiment <- function(x, y, ...)
 {
+  experiment <- x
+  # select an appropriate method according to the type of the experiment
+  if (experiment$type == "bernoulli") {
+    return (plot.experiment.bernoulli(experiment, y, ...))
+  }
+  if (experiment$type == "gaussian") {
+    return (plot.experiment.gaussian(experiment, y, ...))
+  }
+  stop("Unknown experiment type.")
+}
+
+plot.experiment.bernoulli <- function(x, y, ...)
+{
   gp <- posterior(x, y)
   plot(gp, counts=get.counts(x), ...)
+}
+
+plot.experiment.gaussian <- function(x, y, range=NULL, ...)
+{
+  gp <- posterior(x, y)
+  gp$range <- range
+  plot(gp, ...)
 }
