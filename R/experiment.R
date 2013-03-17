@@ -95,15 +95,24 @@ get.counts <- function(experiment)
 posterior.experiment <- function(model, x, ...)
 {
   experiment <- model
+  # select an appropriate method according to the type of the experiment
   if (experiment$type == "bernoulli") {
-    # construct the gaussian process with a link function
-    link       <- new.link()
-    mu         <- link$link(experiment$prior.mean)
-    gp         <- new.gp(x, mu, experiment$kernelf, range=c(0,1), link=link)
-  } else if (experiment$type == "gaussian") {
-    # do not use a link function for gaussian experiments
-    gp         <- new.gp(x, experiment$prior.mean, experiment$kernelf)
+    return (posterior.experiment.bernoulli(model, x, ...))
   }
+  if (experiment$type == "gaussian") {
+    return (posterior.experiment.gaussian(model, x, ...))
+  }
+  stop("Unknown experiment type.")
+}
+
+posterior.experiment.bernoulli <- function(model, x, ...)
+{
+  experiment <- model
+  # construct the gaussian process with a link function
+  link       <- new.link()
+  mu         <- link$link(experiment$prior.mean)
+  gp         <- new.gp(x, mu, experiment$kernelf, range=c(0,1), link=link)
+
   xp         <- NULL
   yp         <- NULL
 
@@ -124,6 +133,35 @@ posterior.experiment <- function(model, x, ...)
   # compute the posterior, whether or not measurements
   # exist
   gp <- posterior(gp, xp, yp)
+  gp
+}
 
-  return (gp)
+posterior.experiment.gaussian <- function(model, x, ...)
+{
+  experiment <- model
+  # do not use a link function for gaussian experiments
+  gp         <- new.gp(x, experiment$prior.mean, experiment$kernelf)
+
+  xp         <- NULL
+  yp         <- NULL
+  ep         <- NULL
+
+  # if we have measurements, add them to xp and yp
+  if (length(experiment$data) > 0) {
+    xp <- matrix(0, dim(gp), nrow=length(experiment$data)) # position
+    yp <- matrix(0, 1,       nrow=length(experiment$data)) # mean
+    ep <- matrix(0, 1,       nrow=length(experiment$data)) # variance
+
+    for (i in 1:length(experiment$data)) {
+      key     <- ls(envir=experiment$data)[i]
+
+      xp[i,] <- key2value(key)
+      yp[i,] <- experiment$data[[key]][1]
+      ep[i,] <- experiment$data[[key]][2]
+    }
+  }
+  # compute the posterior, whether or not measurements
+  # exist
+  gp <- posterior(gp, xp, yp, noise=ep)
+  gp
 }
