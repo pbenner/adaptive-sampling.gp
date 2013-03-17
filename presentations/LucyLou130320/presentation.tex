@@ -1,0 +1,177 @@
+\documentclass{beamer}
+% [dvips] allows use of latex->dvips->ps2pdf instead of pdflatex
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,shadows,positioning,mindmap}
+
+%\usepackage{beamerthemesplit}
+\mode<presentation>
+{
+ %\usetheme{Berkeley} % left bar
+ %\usetheme{Antibes} % tree header
+ %\usetheme{Boadilla} % very plain
+ %\usetheme{Warsaw}
+ %\usetheme{Rochester} % I like
+ %\usetheme{Goettingen} % right bar
+% \usetheme{Ilmenau}
+ \usetheme{Darmstadt}
+
+ %\usepackage{beamerouterthemeshadow}
+ %\usepackage{beamerouterthemesmoothtree}
+ %\usepackage{beamercolorthemeorchid}
+ %\usepackage{beamerinnerthemerounded}
+
+ \setbeamercovered{transparent}
+ % comment out to completely hide covered material
+}
+
+%\usetheme{Warsaw}
+%\usetheme{Frankfurt}
+%\usetheme{Szeged}
+%\usetheme{Singapore}
+%\usetheme{Rochester} % pretty good: no menus at top
+%\usetheme{Pittsburgh}
+%\usetheme{Berlin} % too much header/footer stuff
+%\usecolortheme{seahorse}
+%\usecolortheme{rose}
+
+%\usefonttheme[onlylarge]{structuresmallcapsserif}
+
+
+%\usepackage{times}
+%\usepackage[T1]{fontenc}
+% Or whatever. Note that the encoding and the font should match. If T1
+% does not look nice, try deleting the line with the fontenc.
+
+%\directlua{dofile("ltest.lua")}
+%%% define \bib, which allows to print single references:
+\newcommand{\allreferences}{allreferences.bbl}	% modify this accordingly!
+\directlua{
+entrytable = {}
+insideEntry = false
+key = nil
+for Line in io.lines("\allreferences") do
+	if string.find(Line, "^\noexpand\\end{thebibliography}$") then
+		insideEntry = false
+	end
+	if string.find(Line, "^\noexpand\\bibitem{.+}$") then
+		key=string.match(Line, "^\noexpand\\bibitem{(.+)}$")
+		insideEntry = true
+		entrytable[key] = ""
+	end
+	if insideEntry then
+		entrytable[key] = entrytable[key] .. Line
+	end
+end
+
+function printReferences(keystring)
+	tex.print("\noexpand\\begin{thebibliography}{10}")
+	for key in string.gmatch(keystring, "[^,]+") do
+		tex.print(entrytable[key])
+	end
+	tex.print("\noexpand\\end{thebibliography}")
+end
+}
+\newcommand{\bib}[1]{\directlua{printReferences("#1")}}
+
+% repeat code on each page from 1 to n;
+% if string of code contains @, replace it by current index;
+% Note: use | instead of \ inside the code string!
+\directlua{
+function repeatFigure(codestring, n)
+	for Counter = 1, n do
+		local code = string.gsub(codestring, "@", Counter)
+		local luacode = string.gsub(code, "|", "\string\\")
+		tex.print("\noexpand\\only<" .. Counter .. ">{" .. luacode .. "}\%\%")
+	end
+end
+}
+\newcommand{\repeatoverslides}[2]{\directlua{repeatFigure("#1", #2)}}
+
+\newcommand{\ignore}[1]{}
+\ignore{$}
+\newcommand{\fr}[2]{\begin{frame}\frametitle{#1} #2 \end{frame}}
+\newcommand{\st}[1]{\framesubtitle{#1}}
+\newcommand{\bb}[1]{\begin{itemize} #1 \end{itemize}}
+\newcommand{\red}[1]{\textcolor{red}{#1}}
+\newlength{\frameth}
+\newlength{\framethst}
+\setlength{\frameth}{0.72\textheight}
+\setlength{\framethst}{0.8\textheight}
+\newcommand{\centerhor}[1]{\begin{center}\includegraphics[height=\framethst]{#1}\end{center}}
+% slightly oversized full width figure:
+\newcommand{\fithor}[1]{\hspace*{-5mm}\includegraphics[width=1.1\textwidth]{#1}}
+\newcommand{\conclude}[1]{\begin{itemize}\item[$\Rightarrow$] #1\end{itemize}}
+
+\newcommand{\uncoverimage}[2]{\only<1-\directlua{tex.print(#1-1)}>{\phantom{#2}}\only<#1->{#2}\directlua{tex.print("\%\%")}}
+
+
+%\graphicspath{{./figures/}}
+
+\title{A Spatial Model of Visual Fields}
+%\title[Short Title]{Long Title}
+\subtitle{Gaussian Processes Applied to Functional Testing}
+
+\author{Philipp Benner, Tobias Elze}
+
+\institute[SERI]{%
+\vspace*{-14mm}\\
+%\includegraphics[width=1.4cm]{minerva}\hspace*{5cm}\includegraphics[width=1.0cm]{mislogo}\\[2mm]
+}
+
+
+\date[November 2010] % (optional, should be abbreviation of conference name)
+{\textit{MEEI}\\
+March 20, 2013}
+% - Either use conference name or its abbreviation.
+
+%\pgfdeclareimage[height=2.0cm]{university-logo}{sfu-vector-crest}
+%\logo{\pgfuseimage{university-logo}}
+
+\begin{document}
+
+\AtBeginSection[]
+{
+\begin{frame}
+\frametitle{Outline}
+\tableofcontents[currentsection]
+\end{frame}
+}
+
+\begin{frame}
+ \titlepage
+\end{frame}
+
+\fr{Outline}{
+%\setcounter{tocdepth}{1}
+ \tableofcontents
+}
+
+\section{Background}
+
+\subsection{Deficits of Existing VF Representations}
+
+\fr{Descriptive VF Statistics}{
+\bb{
+\item HFA returns either \red{isolated location measures} (raw thresholds, TDs, ...) that neglect any spatial structure, or
+\pause
+\item spatial \red{summary indices} (MD) that neglect spatial structure
+\pause
+\item few exceptions, e.g.~GHT, that consider spatial structure in a very basic way (symmetry of upper and lower hemifield)
+\item ...}
+}
+
+\fr{Correlations of Glaucomatous VF Locations}{
+\bb{
+\item How are the 54 locations of SS 24--2 correlated?
+\item ${54 \choose 2} = 1431$ correlations
+\pause
+\item $-5 \geq MD \geq -15$
+}
+{\footnotesize \bib{ReddyEtAl2009}}
+}
+
+\fr{Correlations of Glaucomatous VF Locations}{
+\repeatoverslides{|centerhor{correlations@.pdf}}{4}
+}
+
+\end{document}
