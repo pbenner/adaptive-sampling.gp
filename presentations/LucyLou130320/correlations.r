@@ -28,7 +28,8 @@ plotLargestNpercent <- function(n, show.colorbar=TRUE)
 		locations, 
 		xaxt="n", yaxt="n", 
 		xlab="", ylab="", 
-		xlim=c(1, 9 + ifelse(show.colorbar, 0, 2)),
+		xlim=c(1, 9 + ifelse(show.colorbar, 0.5, 0)),
+		bty = "n",
 		main=sprintf("Largest %i%%\t(N=%i)", n, length(coeffs)))
 	lapply(
 		rev(coeffs), 
@@ -41,14 +42,13 @@ plotLargestNpercent <- function(n, show.colorbar=TRUE)
 		{
 			ybottom = 7*(k-1)/256 + 1
 			ytop = ybottom+7/256
-			cat(ybottom, ytop, "\n")
-			rect(9.25, ybottom, 11, ytop, col=cv[k], border=NA)
+			rect(9.5, ybottom, 10, ytop, col=cv[k], border=NA)
 		}
 		axis(4, at=seq(1, 8, length=5), labels=seq(0, 1, length=5))
 	}
 }
 
-pdf("correlations%d.pdf", onefile=F, height=7, width=7+2/9)
+pdf("correlations%d.pdf", onefile=F, height=6.5, width=7.25)
 op = par(mar=c(0, 0, 4, 2)+0.1)
 plotLargestNpercent(2)
 plotLargestNpercent(5)
