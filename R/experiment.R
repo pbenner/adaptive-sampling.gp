@@ -102,16 +102,23 @@ add.measurement.experiment.gaussian <- function(experiment, x, data, ...)
   }
 }
 
-get.counts <- function(experiment)
+get.measurements <- function(experiment)
 {
-  counts <- NULL
+  xp <- NULL
+  yp <- NULL
   for (key in ls(envir=experiment$data)) {
-    value <- key2value(key)
-    for (i in 1:sum(experiment$data[[key]])) {
-      counts <- rbind(counts, value)
+    if (is.matrix(experiment$data[[key]])) {
+      for (j in 1:nrow(experiment$data[[key]])) {
+        xp <- rbind(xp, key2value(key))
+        yp <- rbind(yp, experiment$data[[key]][j,])
+      }
+    }
+    else {
+      xp <- rbind(xp, key2value(key))
+      yp <- rbind(yp, experiment$data[[key]])
     }
   }
-  return (counts)
+  return (list(xp = xp, yp = yp))
 }
 
 #' Compute posterior of an experiment
@@ -148,17 +155,9 @@ posterior.experiment.bernoulli <- function(model, x, ...)
 
   # if we have measurements, add them to xp and yp
   if (length(experiment$data) > 0) {
-    xp <- matrix(0, dim(gp), nrow=length(experiment$data)) # position
-    yp <- matrix(0, 2,       nrow=length(experiment$data)) # counts
-
-    for (i in 1:length(experiment$data)) {
-      key     <- ls(envir=experiment$data)[i]
-      xt      <- key2value(key)
-      counts  <- experiment$data[[key]]
-
-      xp[i,] <- xt
-      yp[i,] <- counts
-    }
+    tmp <- get.measurements(experiment)
+    xp  <- tmp$xp
+    yp  <- tmp$yp
   }
   # compute the posterior, whether or not measurements
   # exist
@@ -178,16 +177,10 @@ posterior.experiment.gaussian <- function(model, x, ...)
 
   # if we have measurements, add them to xp, yp, and ep
   if (length(experiment$data) > 0) {
-    # loop through entries
-    for (i in 1:length(experiment$data)) {
-      key <- ls(envir=experiment$data)[i]
-      # for each entry, there might be several measurements
-      for (j in 1:nrow(experiment$data[[key]])) {
-        xp <- rbind(xp, key2value(key))
-        yp <- rbind(yp, experiment$data[[key]][j, 1])
-        ep <- rbind(ep, experiment$data[[key]][j, 2])
-      }
-    }
+    tmp <- get.measurements(experiment)
+    xp  <- tmp$xp
+    yp  <- tmp$yp[,1]
+    ep  <- tmp$yp[,2]
   }
   # compute the posterior, whether or not measurements
   # exist

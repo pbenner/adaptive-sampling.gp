@@ -125,17 +125,79 @@ utility.experiment.bernoulli <- function(experiment, x, ...)
   return (ut)
 }
 
-utility.experiment.gaussian <- function(experiment, x, ...)
+## utility.experiment.gaussian <- function(experiment, xl, e=1, ...)
+## {
+##   if (is.numeric(xl)) {
+##     xl <- as.matrix(xl)
+##   }
+  
+##   L   <- dim(xl)[1] # number of possible stimuli
+##   ut  <- as.matrix(rep(0.0, L))
+
+##   tmp <- get.measurements(experiment)
+##   xp  <- tmp$xp
+##   yp  <- tmp$yp[,1]
+##   ep  <- tmp$yp[,2]
+##   # compute kernel
+##   k0 <- experiment$kernelf(xp)         # K(X , X )
+
+##   for (i in 1:L) {
+##     # where to evaluate the expected KL-divergence
+##     x <- t(xl[i,])
+##     if (is.null(xp)) {
+##       # we have no measurements
+##       s0 <- experiment$kernelf(x)
+##     }
+##     else {
+##       # compute kernels
+##       k1 <- experiment$kernelf(xp, x)    # K(X , X*)
+##       k2 <- t(k1)                        # K(X*, X )
+##       k3 <- experiment$kernelf(x)        # K(X*, X*)
+##       # cholesky
+##       A    <- k0 + diag(as.vector(ep))
+##       L    <- chol(A)
+##       Linv <- solve(L)
+##       # compute Sigma_0
+##       s0 <- k3 - (k2 %*% Linv) %*% (t(Linv) %*% k1)
+##     }
+
+##     # do the same for Sigma_1, but add another measurement position to xp
+##     xt <- rbind(xp, x)
+##     et <- append(ep, e) # e sets how much we would trust another measurement here
+##     # compute kernels
+##     l0 <- experiment$kernelf(xt)       # K(X , X )
+##     l1 <- experiment$kernelf(xt, x)    # K(X , X*)
+##     l2 <- t(l1)                        # K(X*, X )
+##     l3 <- experiment$kernelf(x)        # K(X*, X*)
+##     # cholesky
+##     A    <- l0 + diag(as.vector(et))
+##     L    <- chol(A)
+##     Linv <- solve(L)
+##     # compute Sigma_1
+##     s1 <- l3 - (l2 %*% Linv) %*% (t(Linv) %*% l1)
+##     # compute c
+##     c <- tail(drop((l2 %*% Linv) %*% t(Linv)), n=1)
+##     # compute utility
+##     ut[i] <- 1/2*(log(s1/s0) - 1 + (s0 + s0/c)/s1)
+##     ut[i] <- -log(s1/s0)
+##   }
+##   return (ut)
+## }
+
+utility.experiment.gaussian <- function(experiment, xl, ...)
 {
-  if (is.vector(x)) {
-    x <- as.matrix(x)
+  if (is.numeric(xl)) {
+    xl <- as.matrix(xl)
   }
   
-  L   <- dim(x)[1] # number of possible stimuli
+  L   <- dim(xl)[1] # number of possible stimuli
   ut  <- as.matrix(rep(0.0, L))
 
   for (i in 1:L) {
-    
+    # where to evaluate the expected KL-divergence
+    x     <- t(xl[i,])
+    gp    <- posterior(experiment, x)
+    ut[i] <- entropy(gp)
   }
   return (ut)
 }
