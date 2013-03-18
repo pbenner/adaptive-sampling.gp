@@ -57,18 +57,48 @@ add.measurement <- function(experiment, ...)
 #' @method add.measurement experiment
 #' @S3method add.measurement experiment
 
-add.measurement.experiment <- function(experiment, x, counts, ...)
+add.measurement.experiment <- function(experiment, x, data, ...)
+{
+  # select an appropriate method according to the type of the experiment
+  if (experiment$type == "bernoulli") {
+    return (add.measurement.experiment.bernoulli(experiment, x, data, ...))
+  }
+  if (experiment$type == "gaussian") {
+    return (add.measurement.experiment.gaussian(experiment, x, data, ...))
+  }
+  stop("Unknown experiment type.")
+}
+
+add.measurement.experiment.bernoulli <- function(experiment, x, data, ...)
 {
   key <- value2key(x)
 
   if (is.null(experiment$data[[key]])) {
-    experiment$data[[key]] <- counts
+    experiment$data[[key]] <- data
   }
   else {
-    experiment$data[[key]] <- experiment$data[[key]] + counts
+    # for bernoulli experiments, simply sum up the counts
+    experiment$data[[key]] <- experiment$data[[key]] + data
   }
   if (all(experiment$data[[key]] == 0)) {
     rm(list = key, envir=experiment$data)
+  }
+}
+
+add.measurement.experiment.gaussian <- function(experiment, x, data, ...)
+{
+  key <- value2key(x)
+
+  # convert data to matrix if necessary
+  if (is.numeric(data)) {
+    data <- t(data)
+  }
+  if (is.null(experiment$data[[key]])) {
+    experiment$data[[key]] <- data
+  }
+  else {
+    # with gaussian experiments, save all recordings in a matrix
+    experiment$data[[key]] <- rbind(experiment$data[[key]], data)
   }
 }
 
@@ -142,22 +172,21 @@ posterior.experiment.gaussian <- function(model, x, ...)
   # do not use a link function for gaussian experiments
   gp         <- new.gp(x, experiment$prior.mean, experiment$kernelf)
 
-  xp         <- NULL
-  yp         <- NULL
-  ep         <- NULL
+  xp         <- NULL # position
+  yp         <- NULL # mean
+  ep         <- NULL # variance
 
-  # if we have measurements, add them to xp and yp
+  # if we have measurements, add them to xp, yp, and ep
   if (length(experiment$data) > 0) {
-    xp <- matrix(0, dim(gp), nrow=length(experiment$data)) # position
-    yp <- matrix(0, 1,       nrow=length(experiment$data)) # mean
-    ep <- matrix(0, 1,       nrow=length(experiment$data)) # variance
-
+    # loop through entries
     for (i in 1:length(experiment$data)) {
-      key     <- ls(envir=experiment$data)[i]
-
-      xp[i,] <- key2value(key)
-      yp[i,] <- experiment$data[[key]][1]
-      ep[i,] <- experiment$data[[key]][2]
+      key <- ls(envir=experiment$data)[i]
+      # for each entry, there might be several measurements
+      for (j in 1:nrow(experiment$data[[key]])) {
+        xp <- rbind(xp, key2value(key))
+        yp <- rbind(yp, experiment$data[[key]][j, 1])
+        ep <- rbind(ep, experiment$data[[key]][j, 2])
+      }
     }
   }
   # compute the posterior, whether or not measurements
