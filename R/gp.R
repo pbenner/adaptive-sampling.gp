@@ -57,7 +57,7 @@ new.gp <- function(x, mu.prior, kernelf, range=NULL, link=NULL)
              # these are computed by posterior()
              mu       = NULL,           # posterior mean
              sigma    = NULL,           # posterior variance
-             ml       = NULL,           # log marginal likelihood
+             ml       = NULL            # log marginal likelihood
              )
   class(gp) <- "gp"
 
