@@ -115,7 +115,12 @@ posterior.gp <- function(model, xp, yp, noise=NULL, enforce.pd=FALSE,...)
   gp <- model
   # xp and yp can be NULL, then simplify compute the prior
   if (is.null(xp) || is.null(yp)) {
-    gp$mu    <- as.matrix(rep(gp$mu.prior, dim(gp$x)[1]))
+    if (length(gp$mu.prior) == 1) {
+      gp$mu <- as.matrix(rep(gp$mu.prior, dim(gp$x)[1]))
+    }
+    else {
+      gp$mu <- gp$mu.prior
+    }
     gp$sigma <- gp$kernelf(gp$x)
     if (enforce.pd) {
       gp$sigma <- as.matrix(nearPD(gp$sigma)$mat)
