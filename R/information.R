@@ -53,3 +53,30 @@ kl.divergence.gp <- function(model, gp1, ...)
   
   return (1/2*drop(tmp1 + tmp2 + tmp3 - N))
 }
+
+#' Compute the entropy of a model
+#' 
+#' @param model for instance a Gaussian process
+#' @param ... arguments to be passed to methods
+#' @export
+
+entropy <- function(model, ...)
+{
+  UseMethod("entropy")
+}
+
+#' Compute the entropy of a Gaussian process
+#' 
+#' @param model Gaussian process
+#' @param ... unused
+#' @method entropy gp
+#' @S3method entropy gp
+
+entropy.gp <- function(model, ...)
+{
+  gp0    <- model
+  sigma0 <- gp0$sigma
+  N      <- length(gp0$mu0)
+
+  return (1/2*(N*log(2*pi*exp(1)) + log(det(sigma0))))
+}
