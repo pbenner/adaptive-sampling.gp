@@ -117,6 +117,55 @@ SEXP exponential_kernel_2d(SEXP x, SEXP y, SEXP l, SEXP var)
         return(ans);
 }
 
+SEXP exponential_kernel_3d(SEXP x, SEXP y, SEXP l, SEXP var)
+{
+        R_len_t i, j;
+        R_len_t nx;
+        R_len_t ny;
+        double *rx   = REAL(x);
+        double *ry   = REAL(y);
+        double *rl   = REAL(l);
+        double *rvar = REAL(var);
+        double *rans, norm;
+        SEXP ans, dim;
+
+        /* check input */
+        dim = getAttrib(x, R_DimSymbol);
+        if(length(dim) != 2 && INTEGER(dim)[1] != 3) {
+                error("x has invalid dimension");
+        }
+        nx = INTEGER(dim)[0];
+
+        dim = getAttrib(y, R_DimSymbol);
+        if(length(dim) != 2 && INTEGER(dim)[1] != 3) {
+                error("y has invalid dimension");
+        }
+        ny = INTEGER(dim)[0];
+
+        if (length(l) != 1) {
+                error("l is not a scalar");
+        }
+        if (length(var) != 1) {
+                error("var is not a scalar");
+        }
+
+        /* compute kernel */
+        PROTECT(ans = allocMatrix(REALSXP, nx, ny));
+        rans = REAL(ans);
+        for(i = 0; i < nx; i++) {
+                for(j = 0; j < ny; j++) {
+                        norm = (rx[i + nx*0] - ry[j + ny*0])*(rx[i + nx*0] - ry[j + ny*0])
+                             + (rx[i + nx*1] - ry[j + ny*1])*(rx[i + nx*1] - ry[j + ny*1])
+                             + (rx[i + nx*2] - ry[j + ny*2])*(rx[i + nx*2] - ry[j + ny*2]);
+                        rans[i + nx*j] =
+                                (*rvar)*exp(-1.0/(2.0*(*rl)*(*rl))*norm);
+                }
+        }
+        UNPROTECT(1);
+
+        return(ans);
+}
+
 // kernel functions as sparse symmetric band matrices
 ////////////////////////////////////////////////////////////////////////////////
 

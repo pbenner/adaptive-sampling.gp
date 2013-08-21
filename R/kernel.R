@@ -62,6 +62,30 @@ kernel.exponential.c.2d <- function(x, y, l, var)
   }
 }
 
+kernel.exponential.c.3d <- function(x, y, l, var)
+{
+  storage.mode(x)   <- "double"
+  storage.mode(l)   <- "double"
+  storage.mode(var) <- "double"
+  if (!is.null(y)) {
+    storage.mode(y)   <- "double"
+  }
+
+  if (!is.matrix(x)) {
+    x <- as.matrix(x)
+  }
+  if (!is.null(y) && !is.matrix(y)) {
+    y <- as.matrix(y)
+  }
+
+  if (is.null(y)) {
+    .Call("exponential_kernel_3d", x, x, l, var, PACKAGE="adaptive.sampling.gp")
+  }
+  else {
+    .Call("exponential_kernel_3d", x, y, l, var, PACKAGE="adaptive.sampling.gp")
+  }
+}
+
 kernel.exponential.c.1d.sparse <- function(x, y, l, var, n)
 {
   storage.mode(x)   <- "double"
@@ -150,6 +174,9 @@ kernel.exponential <- function(l, var, n=NULL)
       else {
         kernel.exponential.c.2d.sparse(x, y, l, var, n)
       }
+    }
+    else if (dim(x)[2] == 3) {
+      kernel.exponential.c.3d(x, y, l, var)
     }
     else {
       stop("x has wrong dimension")
