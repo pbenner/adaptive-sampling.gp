@@ -86,6 +86,30 @@ kernel.exponential.c.3d <- function(x, y, l, var)
   }
 }
 
+kernel.exponential.spherical.c <- function(phi, theta, l, var)
+{
+  storage.mode(phi)   <- "double"
+  storage.mode(l)   <- "double"
+  storage.mode(var) <- "double"
+  if (!is.null(theta)) {
+    storage.mode(theta)   <- "double"
+  }
+
+  if (!is.matrix(phi)) {
+    phi <- as.matrix(phi)
+  }
+  if (!is.null(theta) && !is.matrix(theta)) {
+    theta <- as.matrix(theta)
+  }
+
+  if (is.null(theta)) {
+    .Call("exponential_kernel_spherical", phi, phi, l, var, PACKAGE="adaptive.sampling.gp")
+  }
+  else {
+    .Call("exponential_kernel_spherical", phi, theta, l, var, PACKAGE="adaptive.sampling.gp")
+  }
+}
+
 kernel.exponential.c.1d.sparse <- function(x, y, l, var, n)
 {
   storage.mode(x)   <- "double"

@@ -8,7 +8,7 @@ URL: http://adaptivesampling.org
 SystemRequirements: adaptive-sampling library
     (https://alioth.debian.org/projects/sampling/)
 Description: A wrapper for the adaptive-sampling library.
-Version: 1.0-1
+Version: 1.0-2
 Repository: CRAN
 Date/Publication: 2012-03-03 03:28:12
 Packaged: 2012-03-03 20:34:30 UTC; philipp

@@ -166,6 +166,55 @@ SEXP exponential_kernel_3d(SEXP x, SEXP y, SEXP l, SEXP var)
         return(ans);
 }
 
+// kernel function on spherical coordinate system (e.g. http://en.wikipedia.org/wiki/Spherical_coordinate_system) 
+// on a unit circle (r=1);
+// theta: azimuthal angle, phi: polar angle; all angles in radians
+// direction of fixation: phi = pi/2, theta = pi, i.e. the zenith is pointing upwards
+SEXP exponential_kernel_spherical(SEXP phi, SEXP theta, SEXP l, SEXP var)
+{
+        R_len_t i, j;
+        R_len_t nphi;
+        R_len_t ntheta;
+        double *rphi	= REAL(phi);
+        double *rtheta	= REAL(theta);
+        double *rl	= REAL(l);
+        double *rvar	= REAL(var);
+        double *rans, d;
+        SEXP ans, dim;
+
+        /* check input */
+        dim = getAttrib(phi, R_DimSymbol);
+        if(length(dim) != 2 && INTEGER(dim)[1] != 2) {
+                error("phi has invalid dimension");
+        }
+        nphi = INTEGER(dim)[0];
+
+        dim = getAttrib(theta, R_DimSymbol);
+        if(length(dim) != 2 && INTEGER(dim)[1] != 2) {
+                error("theta has invalid dimension");
+        }
+        ntheta = INTEGER(dim)[0];
+        
+        PROTECT(ans = allocMatrix(REALSXP, nphi, ntheta));
+        rans = REAL(ans);
+        for(i = 0; i < nphi; i++) {
+                for(j = 0; j < ntheta; j++) {
+					// d: segment on the unit circle
+					d = acos( cos(rtheta[i] - rtheta[i+ntheta])*sin(rphi[i])*sin(rphi[i+nphi]) 
+						+ cos(rphi[i])*cos(rphi[i+nphi]) );
+								rans[i + nx*j] =
+										(*rvar)*exp(-1.0/(2.0*(*rl)*(*rl))*d*d);
+				}
+        }
+        UNPROTECT(1);
+
+        return(ans);
+}
+
+
+
+
+
 // kernel functions as sparse symmetric band matrices
 ////////////////////////////////////////////////////////////////////////////////
 
