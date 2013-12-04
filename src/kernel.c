@@ -202,7 +202,7 @@ SEXP exponential_kernel_spherical(SEXP phi, SEXP theta, SEXP l, SEXP var)
 					// d: segment on the unit circle
 					d = acos( cos(rtheta[i] - rtheta[i+ntheta])*sin(rphi[i])*sin(rphi[i+nphi]) 
 						+ cos(rphi[i])*cos(rphi[i+nphi]) );
-								rans[i + nx*j] =
+								rans[i + nphi*j] =
 										(*rvar)*exp(-1.0/(2.0*(*rl)*(*rl))*d*d);
 				}
         }

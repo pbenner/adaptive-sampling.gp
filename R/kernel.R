@@ -177,34 +177,39 @@ kernel.exponential.c.2d.sparse <- function(x, y, l, var, n)
 #' @param l length scale
 #' @param var noise variance
 #' @param n approximate the kernel with a symmetric sparse band matrix of n diagonals
+#' @param spherical use a spherical coordinate system on a unit circle (r=1), with azimuthal and polar angle
 #' @export
 
-kernel.exponential <- function(l, var, n=NULL)
+kernel.exponential <- function(l, var, n=NULL, spherical=FALSE)
 {
   f <- function(x, y=NULL) {
-    # select an appropriate kernel function
-    if (is.null(dim(x)) || dim(x)[2] == 1) {
-      if (is.null(n)) {
-        kernel.exponential.c.1d(x, y, l, var)
-      }
-      else {
-        kernel.exponential.c.1d.sparse(x, y, l, var, n)
-      }
-    }
-    else if (dim(x)[2] == 2) {
-      if (is.null(n)) {
-        kernel.exponential.c.2d(x, y, l, var)
-      }
-      else {
-        kernel.exponential.c.2d.sparse(x, y, l, var, n)
-      }
-    }
-    else if (dim(x)[2] == 3) {
-      kernel.exponential.c.3d(x, y, l, var)
-    }
+    if(spherical) 
+      kernel.exponential.spherical.c(x, y, l, var)
     else {
-      stop("x has wrong dimension")
-    }
+      # select an appropriate kernel function
+      if (is.null(dim(x)) || dim(x)[2] == 1) {
+	if (is.null(n)) {
+          kernel.exponential.c.1d(x, y, l, var)
+	}
+	else {
+          kernel.exponential.c.1d.sparse(x, y, l, var, n)
+	}
+      }
+      else if (dim(x)[2] == 2) {
+	if (is.null(n)) {
+          kernel.exponential.c.2d(x, y, l, var)
+	}
+	else {
+          kernel.exponential.c.2d.sparse(x, y, l, var, n)
+	}
+      }
+      else if (dim(x)[2] == 3) {
+	kernel.exponential.c.3d(x, y, l, var)
+      }
+      else {
+	stop("x has wrong dimension")
+      }
+  }
   }
   return (f)
 }
