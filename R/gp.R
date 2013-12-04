@@ -48,7 +48,7 @@ new.gp <- function(x, mu.prior, kernelf, range=NULL, link=NULL)
   if (!is.matrix(x)) {
     x <- as.matrix(x)
   }
-  
+
   gp <- list(x        = x,              # where to evaluate the gp
              kernelf  = kernelf,        # kernel function
              mu.prior = mu.prior,       # prior mean
@@ -56,7 +56,9 @@ new.gp <- function(x, mu.prior, kernelf, range=NULL, link=NULL)
              link     = link,           # link (response) function
              # these are computed by posterior()
              mu       = NULL,           # posterior mean
-             sigma    = NULL)           # posterior variance
+             sigma    = NULL,           # posterior variance
+             ml       = NULL            # log marginal likelihood
+             )
   class(gp) <- "gp"
 
   return (gp)
@@ -113,7 +115,12 @@ posterior.gp <- function(model, xp, yp, noise=NULL, enforce.pd=FALSE,...)
   gp <- model
   # xp and yp can be NULL, then simplify compute the prior
   if (is.null(xp) || is.null(yp)) {
-    gp$mu    <- as.matrix(rep(gp$mu.prior, dim(gp$x)[1]))
+    if (length(gp$mu.prior) == 1) {
+      gp$mu <- as.matrix(rep(gp$mu.prior, dim(gp$x)[1]))
+    }
+    else {
+      gp$mu <- gp$mu.prior
+    }
     gp$sigma <- gp$kernelf(gp$x)
     if (enforce.pd) {
       gp$sigma <- as.matrix(nearPD(gp$sigma)$mat)
@@ -152,17 +159,22 @@ posterior.gp <- function(model, xp, yp, noise=NULL, enforce.pd=FALSE,...)
       A <- k0
     }
     else if (dim(noise)[1] == 1) {
-      A <- k0 + diag(rep(noise, dim(xp)[1]))
+      A <- k0 + diag(rep(noise, dim(xp)[1]), dim(xp)[1])
     }
     else {
-      A <- k0 + diag(as.vector(noise))
+      A <- k0 + diag(drop(noise))
     }
     L        <- chol(A)
     Linv     <- solve(L)
 
+    # posterior mean
     gp$mu    <- drop(gp$mu.prior + (k2 %*% Linv) %*% (t(Linv) %*% (yp - gp$mu.prior)))
+    # posterior covariance
     gp$sigma <- k3 - (k2 %*% Linv) %*% (t(Linv) %*% k1)
-
+    # log marginal likelihood
+    gp$ml    <- drop(-1/2*(t(yp - gp$mu.prior) %*% Linv) %*% (t(Linv) %*% (yp - gp$mu.prior)))
+    gp$ml    <- gp$ml - sum(log(diag(L))) - dim(xp)[1]/2*log(2*pi)
+    
     if (!is.null(gp$range)) {
       gp$mu  <- bound(gp$mu, gp$range)
     }
