@@ -21,12 +21,3 @@ Depends:
     gridExtra (>= 0.9.1),
     scales
 Date: 03-03-2012
-Collate:
-    'experiment.R'
-    'gp.R'
-    'information.R'
-    'kernel.R'
-    'plot.R'
-    'sampling.R'
-    'utility.R'
-    'link.R'

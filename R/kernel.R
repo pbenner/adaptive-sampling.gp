@@ -88,7 +88,7 @@ kernel.exponential.c.3d <- function(x, y, l, var)
 
 kernel.exponential.spherical.c <- function(phi, theta, l, var)
 {
-  storage.mode(phi)   <- "double"
+  storage.mode(phi) <- "double"
   storage.mode(l)   <- "double"
   storage.mode(var) <- "double"
   if (!is.null(theta)) {
